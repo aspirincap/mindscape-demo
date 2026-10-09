@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.DS_Store
+artifacts/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env.*
+
+# Separate local project, not part of the Mindscape demo
+sharp-gui/

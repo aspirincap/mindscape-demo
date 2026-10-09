@@ -1,0 +1,24 @@
+/* Shared ocean palette across the atlas, controls, and both immersive worlds. */
+:root{--accent:#82cff2;--muted:#8eb6d0;--line:#82bce329;--panel:#0c2943;--soft:#123650;background:#071c31;color:#e1f1fc}
+.app{background:#071c31}.topbar{background:#092239}.bottom-bar{background:#081f35}.control-panel{background:#0c2943}
+.brand-orbit i{border-color:#8ccdeb}.brand{color:#e0f2ff}.local-status{color:#b2d9ed}.local-label{color:#7ea9c4}
+.atlas{background:radial-gradient(ellipse at 69% 40%,#144d7755 0%,#0b315355 43%,#071c31 80%)}
+.atlas-shade{background:linear-gradient(90deg,#071c31c9 0%,#071c3100 49%),linear-gradient(0deg,#071c31df 0%,transparent 30%)}
+.atlas-step-card{background:#0c2d4ce8;border-color:#69b8e138}.atlas-heading h1,.world-intro h1{color:#e0f3ff}.atlas-heading p,.world-intro p{color:#9bbfd7}
+.atlas-step-card h2{color:#d1eeff}.atlas-step-card p{color:#a1c4dc}.atlas-step-card .eyebrow,.eyebrow{color:#87c1e2}
+.primary{background:#78c4e9;color:#082640}.primary:hover{background:#a0dafa}.primary:disabled{background:#558bac}
+.source-tabs{background:#082139}.source-tabs button.selected,.source-tabs button[aria-pressed=true]{background:#1c4665;color:#d3eeff}
+.coherence-number>strong{color:#d3efff}.coherence-track>span,.demo-progress>span{background:#76c9ed}.trace{color:#78c8eb}
+.state-pill{background:#64b8e014;color:#aedff4}.slider-field input{accent-color:#83ccf0}.slider-field input::-webkit-slider-thumb{background:#93d6f6}
+.panel-heading h2,.section-heading h3{color:#c7e8f9}.mini-metrics strong{color:#c9e9fa}.mini-metrics>div>span,.signal-line{color:#90b8d2}
+.presets>button:hover,.presets>button.selected{border-color:#72bce4;background:#75c6ec18!important;color:#ccedff}
+.speak-card textarea,.intent-input{background:#08243c;color:#d6efff;border-color:#78b8df38}.speak-card textarea::placeholder{color:#719dbb}
+.atlas-location-option{background:#0b2d4ce8!important}.atlas-location-option:hover,.atlas-location-option.chosen{background:#154565ed!important;border-color:#77c4ec88}
+.location-icon,.location-icon.forest{background:#6ac2ed14;color:#93d4f5}.location-score{color:#8dd3f5}
+.globe-marker>button{background:#0b2c47dc!important}.globe-marker>button:hover,.globe-marker.selected>button{background:#194b6ef2!important;border-color:#7ccdf3aa}
+.globe-marker.recommended .marker-dot{background:#91dcfa}.marker-hover{background:#103552fa}.destination-match>strong{color:#9eddf8}
+.world-option.chosen{border-color:#7ebddb70;background:#10365080!important}.world-thumb.abyss{background:linear-gradient(140deg,#154b6b,#0b2a49)}
+.back-to-globe,.atlas-tools>button{background:#0d2c49ba!important;color:#b6dcf4}.breathing{background:#092740a6;border-color:#76bbdf26}.breath-ring{border-color:#7ed5f04a}.breath-inner{border-color:#a3e5ff4a}
+.scene-vignette{background:linear-gradient(180deg,#071c3133 0%,transparent 48%,#071c31dd 100%),linear-gradient(90deg,#071c314d,transparent 75%)}
+.help-dialog{background:#0d2c47}.dialog-content p{color:#a6c8de}.toast{background:#113c58f2;color:#d4efff;border-color:#8fcdeb44}
+@media(min-width:851px){.panel-actions{background:#0c2943;box-shadow:0 -10px 20px #0c2943bb}}

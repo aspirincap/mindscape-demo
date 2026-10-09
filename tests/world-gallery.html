@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>12 个世界 · 模型验证</title>
+<style>body{background:#000;color:#fff;font:15px system-ui;padding:24px}button{padding:12px 20px;background:#8052ff;color:white;border:0;border-radius:24px}#scene{width:800px;height:580px;position:fixed;left:-900px;top:0}#gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px}figure{margin:0}img{width:100%}figcaption{padding:12px;color:#bbb}pre{white-space:pre-wrap}h1{font-weight:400}</style>
+<h1>12 个世界 · 原创点云模型验证</h1><p>每个模型的真实 WebGL 帧；不使用摄像头。</p><button id="run">加载并验证全部世界</button><pre id="result">尚未运行</pre><div id="gallery"></div><div id="scene"></div>
+<script type="module">
+import {WorldRenderer} from '/src/renderer.js';import{LOCATIONS}from'/src/core/locations.mjs';
+let engine;document.querySelector('#run').onclick=async()=>{const output=document.querySelector('#result'),gallery=document.querySelector('#gallery');output.textContent='加载中';gallery.replaceChildren();engine?.dispose();engine=new WorldRenderer(document.querySelector('#scene'),()=>{},e=>output.textContent+='\nFAIL: '+e);engine.active=false;engine.state={coherence:1,attention:.58,HR:72};
+for(const place of LOCATIONS){await engine.loadWorld(place.worldId);engine.transition=0;engine.render(performance.now());const gl=engine.renderer.getContext(),err=gl.getError();const figure=document.createElement('figure'),img=document.createElement('img'),caption=document.createElement('figcaption');img.src=engine.renderer.domElement.toDataURL();img.alt=place.name+'点云模型';caption.textContent=place.name+' · '+engine.count.toLocaleString()+' 点';figure.append(img,caption);gallery.append(figure);output.textContent+='\n'+(err===0&&engine.count===place.pointCount?'PASS':'FAIL')+': '+caption.textContent;}
+engine.dispose();engine=null;output.textContent+='\nDONE: 12 / 12';};
+</script></html>

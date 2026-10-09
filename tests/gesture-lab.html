@@ -1,0 +1,45 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Mindscape 手势验证</title>
+<style>body{background:#0b2540;color:#d4efff;font:16px system-ui;padding:32px}button{padding:12px;margin:8px}pre{white-space:pre-wrap}canvas{width:300px}#scene{width:900px;height:560px}button:focus-visible{outline:3px solid skyblue}</style>
+<h1>手势模型与渲染验证 · 仅本地开发</h1><p>使用 Google 官方公开图片和合成手部关键点；不请求摄像头。</p>
+<button id="run">验证真实模型</button><button id="render">验证单手镜头渲染</button><button id="forest">查看森林</button><pre id="result">尚未运行</pre><canvas id="sample" width="640" height="480"></canvas><div id="scene"></div>
+<script type="module">
+import { WorldRenderer } from '/src/renderer.js';
+import { GestureController } from '/src/core/gestures.mjs';
+const output = document.querySelector('#result'); let engine;
+const report = value => output.textContent += '\n' + value;
+document.querySelector('#run').onclick = async () => {
+  output.textContent = '正在加载正式 Worker 与模型…';
+  const worker = new Worker('/mediapipe/gesture-worker-v1.js');
+  const timeout = setTimeout(() => { report('FAIL: 45 秒超时'); worker.terminate(); },45000);
+  let round = 0;
+  worker.onerror = e => { report('FAIL: ' + e.message); clearTimeout(timeout); worker.terminate(); };
+  worker.onmessage = async ({data}) => {
+    if (data.type === 'error') { report('FAIL: '+data.message); clearTimeout(timeout); worker.terminate(); }
+    if (data.type === 'ready') {
+      report('PASS: 正式 Worker / WASM / 模型初始化成功');
+      const canvas=document.querySelector('#sample');canvas.getContext('2d').fillRect(0,0,640,480);
+      const bitmap=await createImageBitmap(canvas);worker.postMessage({type:'frame',bitmap,timestamp:1000},[bitmap]);
+    }
+    if (data.type === 'result') {
+      if (round++ === 0) {
+        report((data.result.landmarks.length===0?'PASS':'FAIL')+': 空白帧不触发手势，'+Math.round(data.duration)+'ms');
+        const img=new Image();img.src='/tests/fixtures/hands.jpg';await img.decode();
+        const bitmap=await createImageBitmap(img);worker.postMessage({type:'frame',bitmap,timestamp:2000},[bitmap]);
+      } else {
+        report((data.result.landmarks.length===1?'PASS':'FAIL')+': 官方图片检测到 '+data.result.landmarks.length+' 只手，'+Math.round(data.duration)+'ms');
+        const controller=new GestureController();controller.update(data.result,2000,720/382);const control=controller.update(data.result,2170,720/382);report((control.mode==='rotate'?'PASS':'FAIL')+': 公开张掌图片触发单手移动模式');report(JSON.stringify(data.result.gestures)); clearTimeout(timeout);worker.terminate();report('DONE: Worker 已释放');
+      }
+    }
+  };
+  worker.postMessage({type:'init'});
+};
+document.querySelector('#render').onclick = async () => {
+ engine?.dispose();engine=new WorldRenderer(document.querySelector('#scene'),()=>{},e=>report('FAIL: '+e));
+ await engine.loadWorld('eiffel');engine.transition=0;engine.state.coherence=1;
+ engine.applyGesture({mode:'rotate',dx:.03,dy:.02});report(engine.orbit.x>.13?'PASS: 单手移动镜头':'FAIL: 镜头');
+ const before=engine.orbit.zoom;const timer=setInterval(()=>engine.applyGesture({mode:'zoom',zoomRate:.5}),50);
+ await new Promise(resolve=>setTimeout(resolve,1000));clearInterval(timer);engine.clearGesture();report(engine.orbit.zoom<before-.1?'PASS: 持续单手缩放':'FAIL: 缩放');
+ report('DONE: 单手镜头渲染');
+};
+document.querySelector('#forest').onclick = async()=>{if(engine)await engine.loadWorld('forest');};
+</script></html>

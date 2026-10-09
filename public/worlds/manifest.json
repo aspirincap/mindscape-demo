@@ -1,0 +1,98 @@
+[
+  {
+    "id": "abyss",
+    "count": 195160,
+    "bytes": 6245120,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural point cloud",
+    "file": "abyss.bin"
+  },
+  {
+    "id": "forest",
+    "count": 280050,
+    "bytes": 8961600,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural point cloud",
+    "file": "forest.bin"
+  },
+  {
+    "id": "great-wall",
+    "count": 105680,
+    "bytes": 3381760,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "great-wall.bin"
+  },
+  {
+    "id": "fuji",
+    "count": 127555,
+    "bytes": 4081760,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "fuji.bin"
+  },
+  {
+    "id": "eiffel",
+    "count": 111640,
+    "bytes": 3572480,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "eiffel.bin"
+  },
+  {
+    "id": "colosseum",
+    "count": 186600,
+    "bytes": 5971200,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "colosseum.bin"
+  },
+  {
+    "id": "giza",
+    "count": 122000,
+    "bytes": 3904000,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "giza.bin"
+  },
+  {
+    "id": "taj-mahal",
+    "count": 119164,
+    "bytes": 3813248,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "taj-mahal.bin"
+  },
+  {
+    "id": "machu-picchu",
+    "count": 119002,
+    "bytes": 3808064,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "machu-picchu.bin"
+  },
+  {
+    "id": "grand-canyon",
+    "count": 148000,
+    "bytes": 4736000,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "grand-canyon.bin"
+  },
+  {
+    "id": "sydney-opera",
+    "count": 139950,
+    "bytes": 4478400,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "sydney-opera.bin"
+  },
+  {
+    "id": "iguazu",
+    "count": 121000,
+    "bytes": 3872000,
+    "format": "xyz-rgb-size-motion / float32",
+    "origin": "original procedural landmark interpretation, not a scan",
+    "file": "iguazu.bin"
+  }
+]

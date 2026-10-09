@@ -1,0 +1,10 @@
+MediaPipe Tasks Vision 1.1.0 (Google), Apache License 2.0.
+Runtime copied from the exact npm package @mediapipe/tasks-vision@1.1.0.
+https://www.npmjs.com/package/@mediapipe/tasks-vision
+https://github.com/google-ai-edge/mediapipe
+
+Official Gesture Recognizer float16 model, version 1:
+https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task
+SHA-256: 97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482
+
+These assets are served locally. Camera frames and hand landmarks remain in the browser.
