@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>点云视觉验收</title>
+<style>body{background:#08080d;color:#ddd;font:14px system-ui;padding:24px}button{padding:12px;background:#8052ff;border:0;color:#fff;border-radius:10px;margin:4px}#scene{width:800px;height:580px;max-width:100%;position:relative}#scene canvas{width:100%;height:100%;display:block}#gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}img{width:100%}figure{margin:0}pre{white-space:pre-wrap}</style>
+<h1>点云视觉管线 · 同机同视角对照</h1><button id="run">运行视觉回归</button><pre id="result">尚未运行</pre><div id="scene"></div><div id="gallery"></div><details><summary>测量数据</summary><pre id="metrics"></pre></details>
+<script type="module">
+import{WorldRenderer}from'/src/renderer.js';import{WorldEffects}from'/src/world-effects.js';import{UnsignedByteType}from'three';import{DEFAULT_VISUAL}from'/src/core/visual-style.mjs';
+const output=document.querySelector('#result'),gallery=document.querySelector('#gallery');
+let engine;
+document.querySelector('#run').onclick=async()=>{
+ const rows=[];output.textContent='运行中';gallery.replaceChildren();
+ const assert=(value,label)=>{if(!value)throw new Error(label);rows.push({check:label,pass:true});output.textContent+='\nPASS: '+label;};
+ try{
+  engine?.dispose();engine=new WorldRenderer(document.querySelector('#scene'),()=>{},message=>{throw new Error(message);});engine.renderer.setAnimationLoop(null);
+  engine.active=false;engine.state={coherence:1,attention:.58,HR:72};await engine.loadWorld('eiffel');engine.transition=0;
+  let now=performance.now();const frame=()=>{now+=1000/60;engine.render(now);};
+  const pixels=()=>{const gl=engine.renderer.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,p=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,p);return p;};
+  let last=null;
+  for(const [mode,label]of [['original','原始点云'],['particles','粒子流动'],['cinematic','完整光影']]){
+   engine.setVisual({...DEFAULT_VISUAL,mode});frame();const p=pixels();let lit=0,change=0;
+   for(let i=0;i<p.length;i+=4){if(p[i]+p[i+1]+p[i+2]>30)lit++;if(last)change+=Math.abs(p[i]-last[i])+Math.abs(p[i+1]-last[i+1])+Math.abs(p[i+2]-last[i+2]);}
+   assert(lit>1000,label+'不是空白帧');assert(engine.renderer.getContext().getError()===0,label+'无 GL 错误');if(last)assert(change>10000,label+'产生可测画面变化');
+   rows.push({mode,lit,change});last=p;
+   const figure=document.createElement('figure'),img=document.createElement('img'),cap=document.createElement('figcaption');img.src=engine.renderer.domElement.toDataURL();img.alt=label;cap.textContent=label;figure.append(img,cap);gallery.append(figure);
+  }
+  engine.active=true;for(let i=0;i<10;i++)frame();assert(engine.effects.trail.valid,'静止相机建立亮点历史');
+  const resetBefore=engine.effects.trail.resetCount;engine.orbit.x+=.2;frame();assert(!engine.effects.trail.enabled&&!engine.effects.trail.valid,'快速转动清除历史');
+  assert(engine.effects.trail.resetCount>resetBefore,'转动触发清除');for(let i=0;i<10;i++)frame();
+  engine.resetCamera();assert(!engine.effects.trail.valid,'重置镜头清除历史');frame();for(let i=0;i<10;i++)frame();
+  engine.effects.resize(600,440);assert(!engine.effects.trail.valid,'改变尺寸清除历史');engine.resize();
+  engine.active=false;frame();assert(!engine.effects.trail.enabled,'暂停不积累拖尾');
+  engine.active=true;engine.reduced=true;frame();assert(!engine.effects.trail.enabled,'减少动态效果偏好禁用拖尾');engine.reduced=false;
+  engine.setVisual({...DEFAULT_VISUAL,mode:'cinematic',dispersion:.8});for(let i=0;i<240;i++)frame();assert(engine.dispersion>.77,'聚散滑块驱动粒子展开');
+  engine.setVisual({...DEFAULT_VISUAL,dispersion:0});for(let i=0;i<660;i++)frame();assert(engine.dispersion<.0001,'粒子恢复原形');
+  const saved=engine.cache.get('eiffel').attributes.position.array.slice(0,30);engine.setVisual({...DEFAULT_VISUAL,dispersion:1});frame();assert(saved.every((v,i)=>v===engine.cache.get('eiffel').attributes.position.array[i]),'原始位置数组未被逐帧改写');
+  engine.setVisual(DEFAULT_VISUAL);await engine.loadWorld('fuji');assert(!engine.effects.trail.valid,'切换地点清除历史');engine.transition=0;frame();assert(engine.renderer.getContext().getError()===0,'跨模型切换无 GL 错误');
+  engine.effects.dispose();const has=engine.renderer.extensions.has;engine.renderer.extensions.has=name=>name==='EXT_color_buffer_float'?false:has.call(engine.renderer.extensions,name);
+  engine.effects=new WorldEffects(engine.renderer,engine.scene,engine.accentScene,engine.camera);engine.renderer.extensions.has=has;engine.resize();frame();
+  assert([engine.effects.bloom.renderTargetBright,...engine.effects.bloom.renderTargetsHorizontal,...engine.effects.bloom.renderTargetsVertical].every(target=>target.texture.type===UnsignedByteType),'无浮点扩展时全部光晕缓冲降级');
+  assert(pixels().some((v,i)=>i%4!==3&&v>30)&&engine.renderer.getContext().getError()===0,'普通颜色缓冲实际绘制成功');
+  engine.dispose();engine=null;assert(document.querySelectorAll('#scene canvas').length===0,'卸载释放画布与渲染资源');output.textContent+='\nDONE';
+ }catch(error){output.textContent+='\nFAIL: '+error.message;engine?.dispose();engine=null;}
+ document.querySelector('#metrics').textContent=JSON.stringify(rows,null,2);
+};
+</script></html>

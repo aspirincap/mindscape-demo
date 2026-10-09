@@ -29,6 +29,10 @@ npm run dev
 
 鼠标拖动控制视角、滚轮缩放；`F` 沉浸、`Esc` 退出、`Space` 暂停。手机会降低点数；支持减少动态效果偏好。环境音为本地 Web Audio 合成。语音依赖浏览器 SpeechRecognition，可能需要网络，不属于 AI Gateway 模型调用。
 
+## 点云视觉
+
+进入场景后打开「视觉调节」，可选 **清晰 / 流光 / 梦境** 三种预设，也可对照 **原始点云 / 粒子流动 / 完整光影**。支持粒子尺寸、聚散、亮度、Bloom、亮点余辉和流动参数；转动镜头时清除旧余辉，保持主体清楚。当前资产是艺术点云，未转换成真实 3DGS。实现和验证见 [VISUAL-STYLE.md](VISUAL-STYLE.md)。
+
 ## 单手控制
 
 仅在最终场景中点「开启手势」才申请摄像头权限。
@@ -90,12 +94,13 @@ npm run build
 
 开发服务上的浏览器验证页（不进入生产构建）：
 
+- `/tests/visual-lab.html`：三种显示层级的实际像素对照、反馈清除、聚散恢复及 GPU 资源生命周期检查。
 - `/tests/world-gallery.html`：依次加载全部世界，检查真实 WebGL 渲染并显示缩略图。
 - `/tests/gesture-lab.html`：正式 Worker/WASM/模型、空白帧与 Google 公开手部图片，验证最多一只手。
 - `/tests/gesture-ui.html`：以公开图片生成测试视频流，验证真实组件开启、暂停、拒绝授权、关闭与卸载释放。
 - `/tests/rate-zoom.html`：以本机录像中的真实手型加合成上下位移验证正式组件，持续放大/缩小各 10 秒、中点停止、松开、重设中点、暂停与冻结视频。详见 [连续缩放验收](GESTURE-RATE-ZOOM.md)。
 - `/tests/responsive-lab.html`：同一应用在 390/768 像素 iframe 中的响应式布局。
 
-32 项单元测试覆盖信号处理、12 个地点的有效性和独立资源、推荐契约、单手模式转换、捏合迟滞、中点停止、10/15/30Hz 速度一致性、过期输入停止、镜头边界与摄像头比例。旧 `browser.mjs` / `deployed-browser.mjs` 是双世界版本的历史脚本；本版以以上检查与实际浏览器验收为准。
+36 项单元测试覆盖信号处理、12 个地点的有效性和独立资源、推荐契约、单手模式转换、捏合迟滞、中点停止、10/15/30Hz 速度一致性、过期输入停止、镜头边界与摄像头比例，以及视觉参数范围、恢复与反馈衰减的一致性。旧 `browser.mjs` / `deployed-browser.mjs` 是双世界版本的历史脚本；本版以以上检查与实际浏览器验收为准。
 
 真实录屏诊断页 `/tests/recording-replay.html` 可按 15/10/5Hz 将本机视频送入正式 Worker。私人视频、旧控制器快照与逐帧数据保存在 gitignored `artifacts/recording-test/`，不打包、不上传。`scripts/verify-gesture-recording.mjs` 仅验证保存的 V.04.1 历史指令，不重新运行当前控制器；历史结果见 [真实录屏回归](GESTURE-RECORDING-TEST.md)。当前录像未包含持续捏住后上下控制速度的动作，新交互使用真实手型加合成位移测试，不等同于真人手感验收。

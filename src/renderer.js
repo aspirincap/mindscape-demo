@@ -2,56 +2,9 @@ import * as THREE from 'three';
 import { GESTURE_MAX_AGE_MS } from './core/gestures.mjs';
 import { integrateGestureZoom, ZOOM_LIMITS } from './core/gesture-zoom.mjs';
 
-const vertexShader = `
-attribute vec3 color;
-attribute float size;
-attribute float motion;
-uniform float uTime;
-uniform float uCoherence;
-uniform float uAttention;
-uniform float uPulse;
-uniform float uPixelRatio;
-uniform float uTransition;
-uniform float uPointScale;
-
-varying vec3 vColor;
-varying float vFog;
-varying float vAlpha;
-float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
-void main() {
-  float seed = hash(position);
-  float chaos = pow(clamp((0.87-uCoherence)/0.87,0.0,1.0), 1.8);
-  vec3 direction = vec3(hash(position.zyx+1.0), hash(position.yzx+3.0), seed)*2.0-1.0;
-  vec3 p = position;
-  float dissolve = max(chaos,uTransition);
-  vec3 wave = vec3(sin(uTime*0.34+seed*22.0), cos(uTime*0.27+seed*31.0), sin(uTime*0.22+seed*17.0));
-  p += direction*dissolve*(5.0+seed*10.0) + wave*dissolve*1.7;
-  p.y += motion*sin(uTime*0.35+seed*50.0)*0.38;
-  p.x += motion*cos(uTime*0.2+seed*17.0)*0.25;
-  p *= 1.0 + uPulse*0.0017*uCoherence;
-  vec4 viewPosition = modelViewMatrix*vec4(p,1.0);
-  gl_Position = projectionMatrix*viewPosition;
-  gl_PointSize = clamp(size*uPointScale*uPixelRatio*(48.0/max(4.0,-viewPosition.z)), 1.0, 14.0*uPixelRatio);
-  gl_PointSize *= 1.0 + dissolve*0.55;
-  float grey = dot(color,vec3(0.299,0.587,0.114));
-  vColor = mix(vec3(grey*0.78),color,0.55+uCoherence*0.45);
-  vColor *= 0.85+uAttention*0.3;
-  vFog = exp(-pow(max(0.0,-viewPosition.z-12.0)*0.025,1.5));
-  vAlpha = (0.7+uCoherence*0.3)*(1.0-uTransition*0.72);
-}`;
-const fragmentShader = `
-precision highp float;
-uniform vec3 uFogColor;
-varying vec3 vColor;
-varying float vFog;
-varying float vAlpha;
-void main() {
-  vec2 uv=gl_PointCoord*2.0-1.0;
-  float d=dot(uv,uv);
-  if(d>1.0) discard;
-  float alpha=exp(-d*2.5)*vAlpha;
-  gl_FragColor=vec4(mix(uFogColor,vColor,vFog),alpha);
-}`;
+import { pointVertex, pointFragment } from './point-shaders.js';
+import { WorldEffects } from './world-effects.js';
+import { DEFAULT_VISUAL, normalizeVisual, smoothVisual, dispersionTarget } from './core/visual-style.mjs';
 
 export class WorldRenderer {
   constructor(container, onStats, onError) {
@@ -59,7 +12,8 @@ export class WorldRenderer {
     this.container = container;
     this.onStats = onStats;
     this.onError = onError;
-    this.clock = 0;
+    this.clock = 0; this.flowTime = 0; this.dispersion = 0;
+    this.visual = normalizeVisual(DEFAULT_VISUAL); this.previousCamera = new THREE.Vector3();
     this.active = true;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.coarse = matchMedia('(pointer: coarse)').matches;
@@ -70,23 +24,28 @@ export class WorldRenderer {
     this.inputRevision = 0;
     this.gesture = { mode: 'idle', strength: 0, time: 0 };
     this.viewAttention = this.state.attention; this.viewDrift = 0;
-    this.cache = new Map();
+    this.cache = new Map(); this.accentCache = new Map();
     this.transition = 0;
     this.phase = 0;
-    this.scene = new THREE.Scene();
+    this.scene = new THREE.Scene(); this.accentScene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(49, 1, 0.1, 130);
     this.renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.coarse ? 1.25 : 1.7));
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.coarse ? 1 : 1.45));
     this.renderer.setClearColor('#000000');
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.05;
     this.renderer.domElement.setAttribute('aria-label', '交互式三维点云世界，拖动旋转，滚轮缩放');
     this.renderer.domElement.setAttribute('role', 'img');
     container.appendChild(this.renderer.domElement);
     this.uniforms = {
       uTime: { value: 0 }, uCoherence: { value: 0.76 }, uAttention: { value: 0.58 },
       uPulse: { value: 0 }, uPixelRatio: { value: this.renderer.getPixelRatio() },
-      uTransition: { value: 0 }, uPointScale: { value: 1.45 }, uFogColor: { value: new THREE.Color('#000000') },
+      uTransition: { value: 0 }, uPointScale: { value: 1.45 },
+      uDispersion:{value:0},uFlow:{value:1},uOriginal:{value:0},uBrightness:{value:1.25},
+      uSaturation:{value:1.1},uPalette:{value:1},uSoftness:{value:.22},uFocus:{value:29},uAccent:{value:0},
     };
-    this.material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms: this.uniforms, transparent: true, depthWrite: false, blending: THREE.NormalBlending });
+    this.material = new THREE.ShaderMaterial({ vertexShader:pointVertex, fragmentShader:pointFragment, uniforms:this.uniforms, transparent:true, depthWrite:true, blending:THREE.NormalBlending });
+    this.accentMaterial = new THREE.ShaderMaterial({ vertexShader:pointVertex, fragmentShader:pointFragment, uniforms:{...this.uniforms,uAccent:{value:1}}, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending });
+    this.effects = new WorldEffects(this.renderer,this.scene,this.accentScene,this.camera);
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
     this.resize();
@@ -114,6 +73,7 @@ export class WorldRenderer {
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
+    this.effects?.resize(Math.max(1,width),Math.max(1,height));
   }
   async loadWorld(id) {
     const generation = this.loadGeneration = (this.loadGeneration || 0) + 1;
@@ -133,6 +93,8 @@ export class WorldRenderer {
       for (let i = 0; i < count; i++) {
         const from = indices[i] * 8;
         p.set(data.subarray(from, from + 3), i * 3); c.set(data.subarray(from + 3, from + 6), i * 3);
+        // Source RGB is display-referred. Work in linear light until OutputPass.
+        for(let j=0;j<3;j++){const v=c[i*3+j];c[i*3+j]=v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}
         s[i] = data[from + 6]; m[i] = data[from + 7];
       }
       geometry.setAttribute('position', new THREE.BufferAttribute(p, 3));
@@ -140,22 +102,33 @@ export class WorldRenderer {
       geometry.setAttribute('size', new THREE.BufferAttribute(s, 1));
       geometry.setAttribute('motion', new THREE.BufferAttribute(m, 1));
       this.cache.set(id, geometry);
+      const accent=new THREE.BufferGeometry(),n=Math.ceil(count/53);
+      for(const [name,itemSize,source]of [['position',3,p],['color',3,c],['size',1,s],['motion',1,m]]){
+        const values=new Float32Array(n*itemSize);
+        for(let j=0;j<n;j++)values.set(source.subarray(j*53*itemSize,(j*53+1)*itemSize),j*itemSize);
+        accent.setAttribute(name,new THREE.BufferAttribute(values,itemSize));
+      }
+      this.accentCache.set(id,accent);
     }
     if (generation !== this.loadGeneration || this.disposed) return;
     if (this.points) this.scene.remove(this.points);
+    if(this.accents)this.scene.remove(this.accents);
+    if(this.trailAccents)this.accentScene.remove(this.trailAccents);
     this.world = id;
     this.points = new THREE.Points(this.cache.get(id), this.material);
     this.points.frustumCulled = false;
     this.scene.add(this.points);
+    this.accents=new THREE.Points(this.accentCache.get(id),this.accentMaterial);this.accents.frustumCulled=false;this.scene.add(this.accents);
+    this.trailAccents=new THREE.Points(this.accentCache.get(id),this.accentMaterial);this.trailAccents.frustumCulled=false;this.accentScene.add(this.trailAccents);
     this.transition = this.reduced ? 0 : 1;
     const bg = '#000000';
     this.renderer.setClearColor(bg);
-    this.uniforms.uFogColor.value.set(bg);
+    this.dispersion=dispersionTarget(this.state.coherence,this.visual);this.effects.reset();
     this.resetCamera();
     this.setDensity(this.density);
     this.ready = true;
   }
-  resetCamera() { this.takePointerControl(); this.orbit = { x: this.world === 'sydney-opera' ? -.52 : .13, y: 0, zoom: 0 }; }
+  resetCamera() { this.effects?.reset();this.takePointerControl(); this.orbit = { x: this.world === 'sydney-opera' ? -.52 : .13, y: 0, zoom: 0 }; }
   clearGesture() { this.gesture = { mode: 'idle', strength: 0, time: 0 }; }
   takePointerControl() { this.inputRevision++; this.clearGesture(); }
   applyGesture(command,capturedAt=performance.now()) {
@@ -167,24 +140,41 @@ export class WorldRenderer {
       this.orbit.y = THREE.MathUtils.clamp(this.orbit.y + command.dy * 14, -3, 4);
     }
   }
+  setVisual(value) {
+    const next=normalizeVisual(value);
+    if(next.mode!==this.visual.mode||next.palette!==this.visual.palette)this.effects.reset();
+    this.visual=next;
+  }
   setDensity(density) {
     this.density = density;
     if (!this.points) return;
     this.count = Math.round(this.points.geometry.attributes.position.count * density * (this.coarse ? 0.4 : 1));
     this.points.geometry.setDrawRange(0, this.count);
-    this.uniforms.uPointScale.value = density < 0.6 ? 1.9 : 1.45;
+    this.effects?.reset();
   }
   render(now) {
     const elapsed = Math.max(0,(now - this.previous) / 1000);
     const dt = Math.min(elapsed, 0.06);
     this.previous = now;
-    if (document.hidden) { this.clearGesture();return; }
+    if (document.hidden) { this.clearGesture();this.effects.reset();return; }
+    if(elapsed>.25||this.wasActive!==this.active)this.effects.reset();this.wasActive=this.active;
     if (!this.active || this.drag || now - this.gesture.time > GESTURE_MAX_AGE_MS || elapsed>.25) this.clearGesture();
     this.orbit.zoom=integrateGestureZoom(this.orbit.zoom,this.gesture,now,elapsed,(this.camera.aspect<.8?38:29)-this.viewAttention*1.8);
-    if (this.active && !this.reduced) { this.clock += dt; this.phase += dt * this.state.HR / 60 * Math.PI * 2; }
+    if (this.active && !this.reduced) { this.clock += dt; this.flowTime += Math.min(elapsed,.1)*this.visual.speed; this.phase += dt * this.state.HR / 60 * Math.PI * 2; }
     this.transition = Math.max(0, this.transition - dt * 0.65);
-    this.uniforms.uTransition.value = this.transition;
-    this.uniforms.uTime.value = this.clock;
+    const raw=this.visual.mode==='original';
+    this.dispersion=smoothVisual(this.dispersion,dispersionTarget(this.state.coherence,this.visual),Math.min(elapsed,.1),this.visual.recovery);
+    this.uniforms.uTransition.value = raw?0:this.transition;
+    this.uniforms.uTime.value = this.flowTime;
+    this.uniforms.uOriginal.value=raw?1:0;this.uniforms.uDispersion.value=raw?0:this.dispersion;
+    this.uniforms.uFlow.value=raw?0:this.visual.flow;
+    this.uniforms.uPointScale.value=(this.density<.6?1.65:1.4)*(raw?1:this.visual.pointSize);
+    this.uniforms.uBrightness.value=raw?1:this.visual.brightness;
+    this.uniforms.uSaturation.value=raw?1:this.visual.saturation;
+    this.uniforms.uPalette.value=raw?0:{natural:0,aurora:1,ocean:2}[this.visual.palette];
+    this.uniforms.uSoftness.value=raw?0:this.visual.softness;
+    if(this.accents)this.accents.visible=!raw;
+    if(this.trailAccents)this.trailAccents.visible=!raw;
     this.uniforms.uCoherence.value = this.state.coherence;
     this.uniforms.uAttention.value = this.state.attention;
     this.uniforms.uPulse.value = Math.sin(this.phase);
@@ -198,7 +188,10 @@ export class WorldRenderer {
     const distance = (this.camera.aspect < .8 ? 38 : 29) + this.orbit.zoom - this.viewAttention * 1.8;
     this.camera.position.set(Math.sin(angle) * distance, (this.world === 'colosseum' || this.world === 'grand-canyon' ? 13 : 8) + this.orbit.y, Math.cos(angle) * distance - 4);
     this.camera.lookAt(0, this.world === 'abyss' ? 3 : this.world === 'eiffel' ? 5.5 : 3.6, -5);
-    this.renderer.render(this.scene, this.camera);
+    this.uniforms.uFocus.value=this.camera.position.distanceTo(new THREE.Vector3(0,4,-5));
+    const moving=!!this.drag||this.camera.position.distanceTo(this.previousCamera)/Math.max(dt,.001)>1.2;
+    this.previousCamera.copy(this.camera.position);
+    this.effects.render(elapsed,this.visual,{moving,reduced:this.reduced,active:this.active,coarse:this.coarse});
     this.frames++;
     if (now - this.lastStats > 1000) {
       this.onStats({ fps: Math.round(this.frames * 1000 / (now - this.lastStats)), points: this.count || 0 });
@@ -208,7 +201,7 @@ export class WorldRenderer {
   dispose() {
     this.disposed = true; this.loadGeneration++;
     this.renderer.setAnimationLoop(null); this.resizeObserver.disconnect(); this.abort.abort();
-    this.cache.forEach(geometry => geometry.dispose()); this.material.dispose(); this.renderer.dispose(); this.renderer.forceContextLoss();
+    this.cache.forEach(geometry => geometry.dispose());this.accentCache.forEach(geometry=>geometry.dispose());this.effects.dispose();this.accentMaterial.dispose(); this.material.dispose(); this.renderer.dispose(); this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 }

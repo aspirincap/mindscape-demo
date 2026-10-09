@@ -116,3 +116,11 @@ V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检�
 32 项单元测试通过，10/15/30Hz 速度一致性通过；正式 MediaPipe 组件链路完成放大/缩小各 10 秒、中点、松开、重设起点、暂停恢复、冻结视频和卸载验收。真实录像帧加合成位移的测试边界见 [GESTURE-RATE-ZOOM.md](GESTURE-RATE-ZOOM.md)。
 
 线上首页、主脚本、镜头渲染脚本 SHA-256 均与本地构建一致；后端健康检查返回 12 地点和既有 `@cf/zai-org/glm-5.3-flash` / `mindscape-demo` Gateway 配置。本次未重新调用付费 AI。Chrome 已确认新版本、操作说明及场景入口。私人录屏、关键点、诊断页和验收报告未进入发布包。证据：`artifacts/rate-zoom/deployment.json`、`summary.json`、`live-help.png`。
+
+## 2026-10-10 V.05.0：点云光影与视觉调节
+
+已部署版本 `e33bb986-82c8-40d0-9cb5-b9fdf60970e7`，页面标记 `V.05.0`。新增可逆连续粒子流场、稀疏亮点反馈、Bloom 和视觉调节面板；提供清晰 / 流光 / 梦境预设，以及原始点云 / 粒子流动 / 完整光影对照。当前 12 个模型仍使用程序化点云资产，效果边界与实现见 [VISUAL-STYLE.md](VISUAL-STYLE.md)。
+
+36 项单元测试、12 个地点实际 WebGL 绘制、23 项视觉浏览器检查通过，包括反馈清理、聚散恢复、帧率一致性与普通颜色缓冲降级。正式界面的预设、对照切换和 390px 布局已在本地浏览器验证。生产构建未包含开发测试页面、私人录屏和本机报告。
+
+线上首页、主脚本与渲染脚本 SHA-256 均与最终本地构建一致；健康检查确认 12 个地点、Cloudflare Workers 后端和既有 GLM-5.3-Flash / AI Gateway 配置。本次未重新调用付费 AI。验证记录位于本机 `artifacts/visual-style/deployment.json`、`verification.txt`、`metrics.json` 和 `comparison.png`。
