@@ -1,5 +1,6 @@
 import { POINT_COUNTS } from './point-counts.mjs';
-// Original, stylized landmark studies. Coordinates locate the theme, not a scan.
+// The legacy pointCount describes bundled procedural assets. Geographic worlds use streamed tiles.
+const GEOGRAPHIC_EXTENTS = {fuji: '30.8 × 36.2 km · 实测点云与真实地形', 'grand-canyon': '23.7 × 25.8 km · 真实地形'};
 const places = [
   ['palau-blue','abyss','帕劳','帕劳','PALAU','深蓝庇护所',7.515,134.582,['深海','放下','释放'],'沉入水下遗迹，给纷乱的思绪一点空间。','palau 海洋 海底 ocean water sea'],
   ['yakushima-forest','forest','屋久岛','日本','YAKUSHIMA','雾之森',30.35,130.5,['森林','安定','恢复'],'循着林间的微光，让呼吸慢慢扎根。','yakushima 森林 树 forest tree nature'],
@@ -14,7 +15,7 @@ const places = [
   ['sydney-opera','sydney-opera','悉尼歌剧院','澳大利亚','SYDNEY OPERA HOUSE','风中的白帆',-33.8568,151.2153,['港湾','海风','舒展'],'让一片片白帆展开，听见海港的呼吸。','悉尼 歌剧院 sydney opera australia'],
   ['iguazu','iguazu','伊瓜苏瀑布','阿根廷 / 巴西','IGUAZÚ FALLS','奔流之境',-25.6953,-54.4367,['瀑布','雨林','释放'],'看水流汇入深谷，让积攒的思绪随之流动。','伊瓜苏 瀑布 iguazu iguaçu waterfall'],
 ];
-export const LOCATIONS = Object.freeze(places.map(([id,worldId,name,country,english,title,lat,lng,theme,description,aliases]) => Object.freeze({id,worldId,name,country,english,title,subtitle:english,lat,lng,theme,description,aliases,pointCount:POINT_COUNTS[worldId]})));
+export const LOCATIONS = Object.freeze(places.map(([id,worldId,name,country,english,title,lat,lng,theme,description,aliases]) => Object.freeze({id,worldId,name,country,english,title,subtitle:english,lat,lng,theme,description,aliases,pointCount:POINT_COUNTS[worldId],geographicExtent:GEOGRAPHIC_EXTENTS[worldId]})));
 export const locationById = id => LOCATIONS.find(l => l.id === id);
 export const locationForWorld = id => LOCATIONS.find(l => l.worldId === id);
 export function latLngToXYZ(lat,lng,radius=1) { const p=lat*Math.PI/180,t=lng*Math.PI/180; return [radius*Math.cos(p)*Math.sin(t),radius*Math.sin(p),radius*Math.cos(p)*Math.cos(t)]; }

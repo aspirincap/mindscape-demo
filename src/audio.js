@@ -27,13 +27,16 @@ export class AudioEngine {
   update(state, world, enabled, volume = 0.5) {
     if (!this.context) return;
     const now = this.context.currentTime;
+    const mix = state.source === 'device' ? state.feedbackMix || 0 : 1;
+    const coherence = state.source === 'device' ? .76 + mix * ((state.relaxationControl ?? .5) - .5) * .5 : state.coherence;
+    const tension = 1 - coherence;
     this.master.gain.setTargetAtTime(enabled ? volume * 0.7 : 0, now, 0.4);
-    this.filter.frequency.setTargetAtTime(380 + state.coherence * 1300, now, 1);
-    this.noiseGain.gain.setTargetAtTime(0.04 + state.tension * 0.13, now, 1);
+    this.filter.frequency.setTargetAtTime(380 + coherence * 1300, now, 1);
+    this.noiseGain.gain.setTargetAtTime(0.04 + tension * 0.13, now, 1);
     const notes = world === 'abyss' ? [110, 164.81, 220, 329.63] : [130.81, 196, 261.63, 392];
     this.voices.forEach(({ osc, gain }, i) => {
-      osc.frequency.setTargetAtTime(notes[i] + Math.sin(now * 0.23 + i) * state.tension * 1.3, now, 0.8);
-      gain.gain.setTargetAtTime((0.018 + state.coherence * 0.028) / (1 + i * 0.3), now, 1);
+      osc.frequency.setTargetAtTime(notes[i] + Math.sin(now * 0.23 + i) * tension * 1.3, now, 0.8);
+      gain.gain.setTargetAtTime((0.018 + coherence * 0.028) / (1 + i * 0.3), now, 1);
     });
   }
   dispose() { this.context?.close(); }

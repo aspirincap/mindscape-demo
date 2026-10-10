@@ -92,7 +92,7 @@ export const GlobeExperience = memo(function GlobeExperience({ cloud, engine, st
         {stage === 'explore' && (selected ? <div className="destination-detail">
           <span className="destination-english">{selected.english}</span><div className="destination-tags">{selected.theme.join(' / ')}</div>
           <button className="primary" disabled={!loaded || !!error} onClick={() => onEnter(selected.id)}>进入{selected.name} <ArrowRight size={16}/></button>
-          <div className="destination-meta"><span>{formatCoordinates(selected)}</span><span>{(selected.pointCount/1000).toFixed(0)}K 点 · 主题创作 · 非实地扫描</span></div>
+          <div className="destination-meta"><span>{formatCoordinates(selected)}</span><span>{selected.geographicExtent || `${(selected.pointCount/1000).toFixed(0)}K 点 · 主题创作 · 非实地扫描`}</span></div>
         </div> : <div className="atlas-recommendation"><p>{recommendations.reason}</p><button className="primary" onClick={() => select(topId)}>看看推荐目的地 <ArrowRight size={16}/></button><small>{recommendationLabel} · 由你决定去哪里</small></div>)}
         {stage === 'enter' && <div className="flight-caption" aria-live="polite"><span>{selected?.english}</span><p>{selected?.name} · {selected?.title}</p><div className="flight-progress"><i ref={progress}/></div><button className="text-button" onClick={onCancel}>取消，返回地球</button></div>}
       </div>
@@ -101,7 +101,7 @@ export const GlobeExperience = memo(function GlobeExperience({ cloud, engine, st
       <div className="directory-heading"><div><div className="eyebrow">PLACES TO FEEL</div><h2>世界的十二种回响。</h2></div><label>寻找目的地<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="地点、国家或风景"/></label></div>
       <div className="destination-list">{ranked.filter(item => {const l=locationById(item.locationId);return `${l.name} ${l.country} ${l.english} ${l.theme.join(' ')} ${l.aliases}`.toLowerCase().includes(search.toLowerCase().trim());}).map((item,index) => {const l=locationById(item.locationId);return <button key={l.id} className={`destination-row ${selectedId===l.id?'chosen':''}`} aria-label={`选择目的地：${l.name}`} aria-pressed={selectedId===l.id} onClick={() => {select(l.id);viewport.current?.parentElement.scrollIntoView({behavior:'smooth',block:'start'});}}><span className="destination-index">{String(LOCATIONS.indexOf(l)+1).padStart(2,'0')}</span><span className="destination-row-name">{l.name}<small>{l.country} · {l.title}</small></span><span className="destination-row-end">{item.locationId===topId?'为你推荐':l.theme[0]}<ArrowRight size={20}/></span></button>;})}</div>
       {search && !ranked.some(item=>{const l=locationById(item.locationId);return `${l.name} ${l.country} ${l.english} ${l.theme.join(' ')} ${l.aliases}`.toLowerCase().includes(search.toLowerCase().trim());}) && <p className="no-results">还没有这个地点。试试国家或风景名称。</p>}
-      <p className="directory-note">10 个地标新世界 + 2 个原有世界。所有点云均为程序化主题创作，并非实地扫描。</p>
+      <p className="directory-note">12 个探索世界。富士山与大峡谷使用真实地理数据，其余为程序化主题创作。</p>
     </section>}
     <div className="atlas-bottom"><span>ONE PLANET. YOUR OWN PACE.</span><span>{LOCATIONS.length} WORLDS <i/>{stats.fps || '—'} FPS</span></div>
     <div className="flight-veil" ref={veil}/>

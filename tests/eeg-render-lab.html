@@ -1,0 +1,8 @@
+<!doctype html><html><meta charset="utf-8"><title>EEG render validation</title><style>body{margin:0;background:black}#scene{width:100vw;height:100vh}</style><div id="scene"></div><script type="module">
+import { GEO_WORLDS } from '/src/core/geo-navigation.mjs';
+window.errors=[];
+const world=new URLSearchParams(location.search).get('world')||'fuji';
+const {WorldRenderer}=await import(GEO_WORLDS.has(world)?'/src/geo-renderer.js':'/src/renderer.js');
+window.engine=new WorldRenderer(document.querySelector('#scene'),s=>window.stats=s,e=>window.errors.push(e));
+await engine.loadWorld(world);window.ready=true;
+</script></html>

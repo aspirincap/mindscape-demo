@@ -3,11 +3,12 @@ import { X } from '@phosphor-icons/react/dist/csr/X';
 import { SlidersHorizontal } from '@phosphor-icons/react/dist/csr/SlidersHorizontal';
 import { DEFAULT_VISUAL, VISUAL_PRESETS, VISUAL_RANGES } from './core/visual-style.mjs';
 import './visual-controls.css';
+import { GEO_WORLDS } from './core/geo-navigation.mjs';
 const MODES=[['original','原始点云'],['particles','粒子流动'],['cinematic','完整光影']];
 const FIELDS=[['pointSize','粒子尺寸'],['dispersion','聚散程度'],['bloom','光晕强度'],['trail','余辉时长'],['brightness','画面亮度']];
 const ADVANCED=[['flow','流动幅度'],['speed','流动速度'],['recovery','恢复时间'],['saturation','色彩浓度'],['softness','远景柔化']];
 export function VisualControls({engine,ready,world}) {
-  const [open,setOpen]=useState(false),[preset,setPreset]=useState('luminous'),[visual,setVisual]=useState({...DEFAULT_VISUAL});
+  const [open,setOpen]=useState(false),[preset,setPreset]=useState('luminous'),[visual,setVisual]=useState(()=>({...DEFAULT_VISUAL}));
   const panel=useRef(),trigger=useRef();
   useEffect(()=>{if(ready)engine.current?.setVisual?.(visual);},[visual,ready,world,engine]);
   useEffect(()=>{if(open)panel.current?.focus();},[open]);
@@ -19,7 +20,7 @@ export function VisualControls({engine,ready,world}) {
       <header><div><span>LIGHT & MOTION</span><h2>让微光，成为风景。</h2></div><button className="icon-button" aria-label="关闭视觉调节" onClick={close}><X size={18}/></button></header>
       <div className="visual-modes" role="group" aria-label="显示层级">{MODES.map(([id,label])=><button key={id} aria-pressed={visual.mode===id} onClick={()=>setVisual(v=>({...v,mode:id}))}>{label}</button>)}</div>
       <div className="visual-presets" role="group" aria-label="视觉预设">{Object.entries(VISUAL_PRESETS).map(([id,v])=><button key={id} aria-pressed={preset===id} onClick={()=>{setPreset(id);setVisual({...v,mode:'cinematic'});}}><i className={'swatch '+id}/><strong>{v.name}</strong><small>{v.note}</small></button>)}</div>
-      <p className="visual-hint">{visual.mode==='original'?'查看原始结构与色彩，比较同一视角的变化。':'共鸣控制聚散；转动镜头时余辉自动收起。'}</p>
+      <p className="visual-hint">{visual.mode==='original'?'原始结构与色彩；不叠加脑电氛围，作为中性对照。':GEO_WORLDS.has(world)?'实测地形上叠加连续流动与稀疏亮点；移动镜头时清除余辉。':'共鸣控制聚散；转动镜头时余辉自动收起。'}</p>
       <div className="visual-fields">{FIELDS.map(range)}</div>
       <details><summary>更多细节</summary><label className="visual-palette">色彩<select aria-label="色彩风格" value={visual.palette} disabled={visual.mode==='original'} onChange={e=>{setPreset('custom');setVisual(v=>({...v,palette:e.target.value}));}}><option value="natural">原生色彩</option><option value="aurora">冷暖流光</option><option value="ocean">蓝紫梦境</option></select></label>{ADVANCED.map(range)}</details>
       <footer><span>手势继续控制镜头</span><button onClick={()=>{setVisual({...DEFAULT_VISUAL});setPreset('luminous');}}>恢复默认</button></footer>

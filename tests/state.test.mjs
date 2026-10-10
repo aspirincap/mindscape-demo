@@ -2,12 +2,7 @@ import { createHash } from 'node:crypto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { DEFAULT_FRAME, validateFrame, SignalProcessor, demoFrame, chooseWorld } from '../src/core/state.mjs';
-
-test('sensor protocol rejects partial, non-numeric and out-of-range frames', () => {
-  assert.deepEqual(validateFrame(DEFAULT_FRAME), DEFAULT_FRAME);
-  for (const frame of [null, {}, { ...DEFAULT_FRAME, HR: 0 }, { ...DEFAULT_FRAME, relaxation: 76 }, { ...DEFAULT_FRAME, attention: NaN }, { ...DEFAULT_FRAME, signalQuality: '1' }]) assert.throws(() => validateFrame(frame));
-});
+import { DEFAULT_FRAME, SignalProcessor, demoFrame, chooseWorld } from '../src/core/state.mjs';
 
 test('relaxation recovers the world smoothly; attention and HR remain independent', () => {
   const p = new SignalProcessor();
@@ -27,15 +22,6 @@ test('bad signal holds all visual metrics instead of creating stress', () => {
   for (let i = 0; i < 100; i++) p.update({ relaxation: 0, attention: 0, HR: 200, signalQuality: 0.1 }, 0.05);
   for (const key of ['coherence', 'relaxation', 'attention', 'HR']) assert.equal(p.value[key], before[key]);
   assert.equal(p.value.signalQuality, 0.1);
-});
-
-test('calibration excludes invalid samples and applies a bounded personal baseline', () => {
-  const p = new SignalProcessor(); p.beginCalibration();
-  for (let i = 0; i < 40; i++) p.update({ ...DEFAULT_FRAME, signalQuality: 0 }, 0.05);
-  assert.equal(p.finishCalibration(), false); assert.equal(p.baseline, null);
-  p.beginCalibration();
-  for (let i = 0; i < 200; i++) p.update({ ...DEFAULT_FRAME, relaxation: 0.8 }, 0.05);
-  assert.equal(p.finishCalibration(), true); assert.ok(Math.abs(p.baseline - 0.8) < 1e-10);
 });
 
 test('60-second timeline traverses fragmentation, recovery and calm', () => {

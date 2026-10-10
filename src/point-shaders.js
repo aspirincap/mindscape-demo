@@ -6,6 +6,7 @@ attribute float size;
 attribute float motion;
 uniform float uTime, uCoherence, uAttention, uPulse, uPixelRatio;
 uniform float uTransition, uPointScale, uDispersion, uFlow, uOriginal;
+uniform float uAccentGain;
 uniform float uBrightness, uSaturation, uPalette, uSoftness, uFocus, uAccent;
 varying vec3 vColor;
 varying float vAlpha;
@@ -38,7 +39,7 @@ void main() {
   float depth = exp(-pow(max(0.,-viewPosition.z-18.)*.019,1.35));
   float light = .9+uAttention*.2;
   vColor = max(vec3(0.),c)*uBrightness*light*depth;
-  vColor *= mix(1.1,3.2,uAccent);
+  vColor *= mix(1.1,3.2*uAccentGain,uAccent);
   vAlpha = (1.-uTransition*.7) * mix(.88,.58,uAccent) / (blur*blur);
 }`;
 export const pointFragment = `

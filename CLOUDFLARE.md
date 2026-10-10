@@ -1,87 +1,94 @@
-# Cloudflare 部署
+# Cloudflare 部署与 EEG v2 协议
 
-站点：<https://mindscape-demo.aspirincap.workers.dev>
+站点：https://mindscape-demo.aspirincap.workers.dev/ 。当前实现 UI 为 V.07.0；部署版本与本轮验收状态见 [HANDOFF.md](HANDOFF.md)。以下协议完整替换旧设备输入格式，不提供兼容分支。
 
-已部署 `mindscape-demo` Worker，静态资源、两套世界、实时 API、两类 SQLite Durable Objects 和 Workers AI 绑定均在同一账号。AI Gateway `mindscape-demo` 已于 2026-10-08 在 Cloudflare 控制台创建，线上完整链路已通过 `REQUIRE_AI=1` 验收：返回 `mode: "ai-gateway"`、网关 ID 和真实网关请求 ID。Chrome 页面也已验证显示「AI 推荐」，根据海底意愿将帕劳排在首位。
+## 组成与发布
 
-本次线上检查同时通过访客会话隔离、HTTP/WSS 设备输入、错误帧拒绝、2.5 秒断流检测及双世界资源加载。结果保存在 `artifacts/cloudflare-live.json`；Chrome 实测记录为 `artifacts/cloudflare-browser-ai.json`，截图为 `artifacts/cloudflare-ai-live.png`。网关验收请求 ID：`01M4DEQNTDW56ESQR025HKCZ46`。
-
-2026-10-08 模型已切换为 `@cf/zai-org/glm-5.3-flash`，部署版本 `abc36599-db47-4d36-b5d3-327250d96caa`。森林与海底请求均通过线上真实 AI 验收，响应的 `model` 与配置一致；海底请求经网关返回耗时约 3.67 秒，网关请求 ID 为 `01M4DK2CBYF2KSWVB5Z08WDERJ`。切换记录为 `artifacts/cloudflare-glm-check.json`。
-
-## 组成
-
-- **Workers Static Assets**：React 页面、地球、字体及双世界点云，静态资源从边缘分发。
-- **Worker API**：`/api/session`、`/api/health`、`/api/locations`、`/api/route`、`/api/frame` 和 `/ws`。
-- **SensorSession Durable Object**：每个 256 位随机会话独立；WebSocket 使用休眠 API，按设备输入实时转发。无固定轮询计时器，不持久化心率、脑电或传感器历史。浏览器在 2.5 秒断流后保持上一次有效画面。
-- **Workers AI → AI Gateway**：`@cf/zai-org/glm-5.3-flash`，只在用户主动提交心意时调用。发送文字和粗粒度放松状态，不发送心率、原始 EEG、IP 或配对凭据。使用 `reasoning_effort: low`、`max_completion_tokens: 1024` 和严格 JSON Schema，验证目的地白名单和数值范围；超时/格式异常时回退规则。
-- **AiBudget Durable Object**：同一 IP 每分钟 6 次、全站每分钟 20 次、每天 200 次推理尝试。每日额度在 UTC 00:00 重置；超额继续使用本地推荐。额度只计数，不记录用户文本。按分钟保存 IP 摘要；次分钟请求时重置。
-
-`mode: "ai-gateway"` 表示真实模型结果；`mode: "local-rules"` 和 `fallback` 表示降级。健康检查中的 `router/gateway/model` 是配置，不代表模型推理成功。AI Gateway 请求关闭缓存和内容日志，Worker 持久日志默认关闭。
-
-## 网关与部署
-
-本账号已创建 `mindscape-demo`，开启身份验证、关闭缓存和内容日志，并设置滑动窗口 20 次/60 秒限制，Workers AI 使用 Standard billing。Worker 的 AI binding 自带账号身份，不需要把 Cloudflare API Token 放进前端或 Worker Secret。重新部署到其他账号时，可在 **AI → AI Gateway** 中创建同名网关并复用上述设置。
-
-也可以使用带 **AI Gateway Edit** 权限的 Token 文件创建（文件只包含 Token，放在项目之外，权限 `600`）：
-
-```sh
-CLOUDFLARE_TOKEN_FILE=/absolute/path/to/token npm run deploy:gateway
-```
-
-脚本不会打印凭据，也不会覆盖同名网关；已有网关的设置需在控制台确认。若 Wrangler OAuth 调用网关管理接口返回 403，可通过已登录控制台管理网关，或使用具备 AI Gateway Edit 权限的 Token。Worker binding 的运行身份与命令行管理权限独立；管理接口权限不足不影响已验证的线上推理。
+- Worker `mindscape-demo` 同时提供静态资源、推荐和 EEG 会话 API；`TERRAIN` 绑定私有 R2 桶 `mindscape-terrain`。
+- `SensorSession` 按不可猜测 token 隔离会话，仅在内存保存去重序号、时效与连接所有权，不保存 EEG 历史，也不向新浏览器重放旧数据。v2 使用普通 WebSocket 和到期检查定时器，连接存续期间不使用休眠模式；这是显式的资源取舍。
+- `AiBudget` 持久化限额计数：每 IP 每分钟 6 次、全站每分钟 20 次、每天 200 次尝试。AI 模型 `@cf/zai-org/glm-5.3-flash`，Gateway `mindscape-demo`。只在用户主动提交 `{text}` 时调用，不传脑电/HR/摄像头或设备凭据；失败明确返回本地规则。
+- AI binding 自带账号身份；网关关闭内容日志和缓存，Worker 默认关闭持久日志。`/api/health` 的模型信息是配置，不证明推理成功。
 
 ```sh
 npm ci
-npx wrangler whoami
 npm test
+npm run test:eeg
+npm run test:eeg:integration
 npm run test:cloudflare
+npx wrangler whoami
 npm run deploy
 ```
 
-`wrangler.jsonc` 已绑定当前账号。部署到另一账号时需同时修改 `account_id`，并创建自己的网关。AI 推理采用该账号的 Workers AI 计费/配额；这里未升级套餐、购买预付费积分或绑定外部模型供应商。
+`deploy` 使用 `vite build --mode cloudflare`，只包含正式 `index.html`；`npm run build` 才包含本地监视器 `eeg.html`。不再依赖 ignored artifacts 内的临时构建配置。数据 pack 未改变时无需上传 R2；更改地形仍须先上传新版本 pack 再发布 manifest。
 
-## 设备配对
+本地 `npm run dev` 也使用会话配对。Cloudflare 本地页面可用 `npm run dev:cloudflare`；本地 R2 需要另外装入 pack。纯 API 隔离测试使用不绑定真实 AI 的 Miniflare。
 
-浏览器进入「设备接入」，点击「复制设备接入配置」。配置包含 HTTP/WSS 地址及 `Authorization: Bearer …`，有效期 24 小时；只交给自己的采集程序。
+## 配对与 WebSocket
 
-浏览器通过同源 HttpOnly、SameSite=Strict、Secure Cookie 自动关联会话。外部设备向 `/api/frame` 或 `/ws` 请求时携带复制的 Authorization 请求头。凭据不放在 URL，避免被访问日志记录。HTTP 正文直接发送 frame：
+1. Mindscape → 调节共鸣 → 设备接入 → 复制设备接入配置。
+2. `npm run eeg` → 本地 EEG Studio → 连接 Mindscape → 粘贴 → 开始联动。
+3. 体验页确认读数后点击“开始脑电氛围”，按需校准。
+
+配置包含 `protocol: mindscape.eeg.v2`、`http`、`websocket`、`authorization`、`expiresAt`。凭据是 24 小时会话令牌，仅保存在本地发送服务内存；不放入 URL、导出、日志或仓库。浏览器使用 HttpOnly / SameSite=Strict Cookie，线上另带 Secure。过期、发送连接被替换或协议不符时停止重试，要求用户重新配对。
+
+设备连接 `/ws?role=device`，握手带 `Authorization: Bearer …`；浏览器连接 `/ws` 为只读 viewer。两端都发送 `{"type":"ping","protocol":"mindscape.eeg.v2","id":1}`。服务回复 `pong` 和 `serverTime`；设备 pong 还包含 `lease`。
+
+设备按真实观测发送完整信封（示例是结构说明，不应循环重放）：
 
 ```json
-{"attention":0.58,"relaxation":0.76,"HR":72,"signalQuality":0.98}
+{
+  "type": "sensor",
+  "protocol": "mindscape.eeg.v2",
+  "streamId": "00000000-0000-4000-a000-000000000001",
+  "seq": 1,
+  "capturedAt": 1791638488926,
+  "source": "thinkgear",
+  "lease": "本连接最近一次 pong 返回的租约",
+  "frame": {
+    "attention": 0.70, "relaxation": 0.23, "HR": null, "poorSignal": 0,
+    "ageMs": {"attention": 0, "relaxation": 0, "poorSignal": 0},
+    "sampleIds": {"attention": 1, "relaxation": 1, "poorSignal": 1}
+  },
+  "capabilities": {"heartRate": false, "raw": false}
+}
 ```
 
-WebSocket 消息：
+服务独立计算 `valid` 和 `signalQuality`，不信任发送者标记。接收后仅广播 `eeg-frame`，带标准化信封及服务端 `receivedAt`。不会把心跳变成样本，不按绘制帧率重复广播。串口状态以独立的 `bridge-status` 传递。
 
-```json
-{"type":"sensor","frame":{"attention":0.58,"relaxation":0.76,"HR":72,"signalQuality":0.98}}
-```
+- eSense 1–100 归一化为 .01–1；0、缺失、越界视为无效。HR 可 null；有效 HR 需要能力标志、独立年龄与样本号。
+- poorSignal 保留 0–255 原值；应用当前仅接受 0 且新鲜的接触状态。signalQuality 是接受门控，不是准确率。
+- 同一 stream 的 seq 必须递增，字段 sampleId 不倒退；相同 sampleId 的值不能变、更不能用 age=0 刷新有效期。同值但新 sampleId 是新观测。
+- 串口重开生成新 stream UUID；网络重连保留原 UUID。新发送连接通过 ping 接管后关闭旧发送者，旧连接迟到包无权覆盖。
+- 约 1 Hz 指标按实际事件发送，不补成高频。断网只保留最新候选，字段超过 2.5 秒不采用；心跳不延长读数时效。重连按 1/2/4/8/15 秒上限加抖动退避。
+- 每会话最多 6 个连接，每连接每秒最多 20 条消息；正文最大 16 KiB。跨来源拒绝，Node 本地另检查 Host。
 
-建议 25Hz 持续输入，WebSocket 每连接最多接收 50 帧/秒。每会话最多 6 个连接。过期后重新复制配对配置；刷新配对凭据不会复用过期会话。未配对请求为 401，跨域请求为 403。默认模拟器完全在浏览器内运行，不上传逐帧数据。
+## 时效与时钟
 
-本地 `npm run dev` 仍保留原有无需配对的回环地址桥接，不能将该 Node 进程直接暴露到公网。
+不比较 Mac 与云端的绝对采集时钟。桥接用本地单调时间算字段年龄。服务端给设备发短租约，用“租约发出至数据返回”的时间作为保守链路上界，加到字段年龄；租约超过 2.5 秒即拒绝。浏览器用自己的 ping 发出时刻、到达时刻与服务端 pong 时间建立保守映射，继续累加服务端至浏览器的时间上界。未完成时钟握手、往返过慢或探测超过 5 秒未更新时，不采用设备读数。
 
-## 验收
+该方法宁可提前判为过期，不因两台机器时钟偏差把旧包当新包。暂停/隐藏与时效各自独立；网络恢复不重放缓存，新的有效读数恢复稳定后平滑接续。
+
+## HTTP 排错路径
+
+携带相同 Authorization，以 `POST /api/eeg/lease` 发送 `{"protocol":"mindscape.eeg.v2"}`，取得 `connectionId` 与 `lease`。在 2.5 秒内向 `/api/frame` POST 同样的完整 v2 信封，额外附这两个字段。HTTP claim 会接管发送权并关闭旧 WSS 发送者，适合独立排错，不与正常桥接混用。
+
+未配对 401，跨域 403，格式/协议错误 400，重复/乱序/过期租约/旧连接 409。WS 错误带 `code`；`PROTOCOL_MISMATCH` 提示更新客户端。旧四字段 JSON、缺版本和未知版本均拒绝。
+
+## 验证与回滚
 
 ```sh
-# Cloudflare 本地运行时：会话隔离、WSS 协议、HTTP 帧、断流、校验、AI 限额
 npm run test:cloudflare
-
-# 真实线上验收；强制要求真实 AI 成功，不接受回退
-DEPLOY_URL=https://mindscape-demo.aspirincap.workers.dev REQUIRE_AI=1 EXPECTED_AI_MODEL=@cf/zai-org/glm-5.3-flash npm run test:cloudflare
-
-# Chromium 验证真实地球、双世界、推荐、设备连接和手机布局
-DEPLOY_URL=https://mindscape-demo.aspirincap.workers.dev REQUIRE_AI=1 node tests/deployed-browser.mjs
+DEPLOY_URL=https://mindscape-demo.aspirincap.workers.dev TEST_HTTPS_PROXY=http://127.0.0.1:7897 npm run test:cloudflare
+EEG_TEST_URL=https://mindscape-demo.aspirincap.workers.dev EEG_TEST_PROXY=http://127.0.0.1:7897 npm run test:eeg:browser
 ```
 
-命令行访问需使用系统代理时，给线上 API 验收添加 `TEST_HTTPS_PROXY=http://127.0.0.1:7897`（按本机代理地址调整）；浏览器测试沿用系统浏览器网络设置。
+代理参数按本机情况选用。测试可能消耗推荐次数；只有需要验证模型时再加 `REQUIRE_AI=1 EXPECTED_AI_MODEL=@cf/zai-org/glm-5.3-flash`。不要用下面历史记录中的旧双世界浏览器脚本验收当前设备协议。
 
-报告和截图保存到 `artifacts/cloudflare-*`，不包含会话凭据。去掉 `REQUIRE_AI=1` 可验证网关维护时的回退体验。默认预算也适用于测试请求；避免一分钟内重复发起大量线上验收。
+发布前停止设备发送；Worker 与前端同一发布，更新本地桥接后刷新页面、重新配对。回滚先停止联动，再一起恢复相匹配的 Worker / 前端 / 本地桥接；V.06.1 没有完整 EEG 接入，回滚后保持脑电氛围关闭。几何 R2 版本见 GEOSPATIAL.md，本轮不变。
 
-Cloudflare 本地完整页面调试：`npm run dev:cloudflare`。Wrangler 的 AI binding 可能调用远端服务；纯离线测试使用 `npm run test:cloudflare`（没有模型绑定）。
+## 历史发布记录（非当前协议）
 
-参考：[Workers AI 网关绑定](https://developers.cloudflare.com/ai-gateway/usage/providers/workersai/)、[绑定请求自带认证](https://developers.cloudflare.com/ai-gateway/configuration/authentication/)、[网关创建 API](https://developers.cloudflare.com/api/resources/ai_gateway/methods/create/)。
-
-## 2026-10-09 海洋蓝与手势版本
+### 2026-10-09 海洋蓝与手势版本
 
 前端采用海洋蓝配色；最终双世界新增可选 MediaPipe 手势控制。静态资源增加 `public/mediapipe/`：固定 SDK 1.1.0、SIMD/非 SIMD WASM、官方 Gesture Recognizer float16 v1、独立识别 Worker。最大单文件约 12 MB，模型约 8 MB。模型和 SDK 按版本长期缓存，识别 Worker 每次校验更新。摄像头和手部数据在浏览器处理，后端/API/Gateway 无新增视频接收接口。
 
@@ -89,7 +96,7 @@ Cloudflare 本地完整页面调试：`npm run dev:cloudflare`。Wrangler 的 AI
 
 已部署版本：`3b2e212e-d083-4fa3-986d-36e26ed1b691`。21 项单元测试、公开图片真实 MediaPipe 推理、两世界手势渲染、摄像头替身生命周期和移动端布局检查通过。线上 7 项验收全部通过，含 GLM-5.3-Flash 真实网关调用、WSS 会话隔离、模型 SHA-256、WASM MIME 和识别 Worker 缓存策略。未进行真人摄像头动作试用；实际光照、遮挡与手感仍需现场验证。截图：`artifacts/cloudflare-ocean-gestures.png`，验收记录：`artifacts/gesture-verification.json`、`artifacts/gesture-lab.txt`、`artifacts/cloudflare-live.json`。
 
-## 2026-10-09 V.04：单手控制、黑底星群与 12 地点
+### 2026-10-09 V.04：单手控制、黑底星群与 12 地点
 
 本版取代前一节的海洋蓝和双手交互。按照用户提供的 `DESIGN (3).md` 重构界面：纯黑、Inter 轻字重、紫色主按钮、琥珀标签、多色三角粒子地球；共鸣控制收进原生对话框。原有两世界保留，新增 10 个独立地标模型，详见 [LANDMARKS.md](LANDMARKS.md)。
 
@@ -101,7 +108,7 @@ MediaPipe `numHands: 1`。张掌/握拳移动镜头，拇指食指捏合后开�
 
 V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检查全部通过：安全会话、WSS 隔离、设备 HTTP 输入、信号超时、真实 GLM 推荐、全部 12 个模型及字体、单手模型与 WASM、通过 AI Gateway 选择新增埃菲尔铁塔。验收输出见 `artifacts/cloudflare-live.json`；前端截图见 `artifacts/cloudflare-v4-home.png`；其余本地证据见 `artifacts/v4-verification.json`。
 
-## 2026-10-09 V.04.1：真实录屏回归修复
+### 2026-10-09 V.04.1：真实录屏回归修复
 
 基于用户提供的 14.6 秒录像，修复两指已经张开时不能直接缩放、握拳类别置信度波动引起的控制间断，并保持摄像头画面原比例。指间距离计算纳入 MediaPipe 估算深度；页面说明同步更新。
 
@@ -109,7 +116,7 @@ V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检�
 
 最终部署版本：`11e8f2d9-d6e7-432a-8f1c-aff77fd21ef7`。页面标记 `V.04.1`。本次只调整前端交互，后端绑定与 GLM-5.3-Flash / AI Gateway 配置延续 V.04。线上核对记录保存在 `artifacts/recording-test/deployment.json`，包括首页与脚本 SHA-256 比对和 Worker 健康检查；本次未重新调用付费 AI 推理。
 
-## 2026-10-09 V.04.2：捏住后连续缩放
+### 2026-10-09 V.04.2：捏住后连续缩放
 
 已部署版本 `6e965e3a-df74-46d0-92c6-1c79c1847c6b`，页面标记 `V.04.2`。捏合锁定中点，上下偏移控制持续缩放速度；保持位置持续运动，回中点或松开停止，再次捏合重设中点。张掌/握拳移动镜头保留。预览增加停止带与方向/速度提示；丢手、暂停、页面隐藏和画面冻结都有停止保护。
 
@@ -117,7 +124,7 @@ V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检�
 
 线上首页、主脚本、镜头渲染脚本 SHA-256 均与本地构建一致；后端健康检查返回 12 地点和既有 `@cf/zai-org/glm-5.3-flash` / `mindscape-demo` Gateway 配置。本次未重新调用付费 AI。Chrome 已确认新版本、操作说明及场景入口。私人录屏、关键点、诊断页和验收报告未进入发布包。证据：`artifacts/rate-zoom/deployment.json`、`summary.json`、`live-help.png`。
 
-## 2026-10-10 V.05.0：点云光影与视觉调节
+### 2026-10-10 V.05.0：点云光影与视觉调节
 
 已部署版本 `e33bb986-82c8-40d0-9cb5-b9fdf60970e7`，页面标记 `V.05.0`。新增可逆连续粒子流场、稀疏亮点反馈、Bloom 和视觉调节面板；提供清晰 / 流光 / 梦境预设，以及原始点云 / 粒子流动 / 完整光影对照。当前 12 个模型仍使用程序化点云资产，效果边界与实现见 [VISUAL-STYLE.md](VISUAL-STYLE.md)。
 

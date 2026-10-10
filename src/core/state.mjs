@@ -2,47 +2,15 @@ import { LOCATIONS, locationForWorld } from './locations.mjs';
 export const DEFAULT_FRAME = Object.freeze({ attention: 0.58, relaxation: 0.76, HR: 72, signalQuality: 0.98 });
 export const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
 
-export function validateFrame(input) {
-  if (!input || typeof input !== 'object') throw new Error('传感器帧必须是 JSON 对象');
-  const ranges = { attention: [0, 1], relaxation: [0, 1], HR: [35, 220], signalQuality: [0, 1] };
-  const result = {};
-  for (const [key, [min, max]] of Object.entries(ranges)) {
-    const value = input[key];
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max) {
-      throw new Error(`${key} 必须是 ${min}–${max} 之间的数值`);
-    }
-    result[key] = value;
-  }
-  return result;
-}
-
+// Simulator-only processor. Device samples use EEGFeedback and never enter here.
 export class SignalProcessor {
-  constructor() {
-    this.value = { ...DEFAULT_FRAME, coherence: 0.76, tension: 0.24 };
-    this.baseline = null;
-    this.samples = [];
-    this.calibrating = false;
-  }
-  beginCalibration() { this.samples = []; this.calibrating = true; }
-  finishCalibration() {
-    if (this.samples.length >= 20) {
-      this.baseline = this.samples.reduce((sum, n) => sum + n, 0) / this.samples.length;
-    }
-    this.calibrating = false;
-    return this.samples.length >= 20;
-  }
+  constructor() { this.value = { ...DEFAULT_FRAME, source: 'simulator', coherence: .76, tension: .24 }; }
   update(frame, dt) {
-    const alpha = 1 - Math.exp(-Math.min(dt, 0.1) / 1.15);
     this.value.signalQuality = frame.signalQuality;
-    // Bad or stale input holds the last good visual state. It never means stress.
-    if (frame.signalQuality < 0.4) return this.value;
-    if (this.calibrating) this.samples.push(frame.relaxation);
-    for (const key of ['attention', 'relaxation', 'HR']) {
-      this.value[key] += (frame[key] - this.value[key]) * alpha;
-    }
-    const adjustment = this.baseline === null ? 0 : (0.5 - this.baseline) * 0.2;
-    this.value.coherence = clamp(this.value.relaxation + adjustment);
-    this.value.tension = 1 - this.value.coherence;
+    if (frame.signalQuality < .4) return this.value;
+    const alpha = 1 - Math.exp(-Math.max(0, dt) / 1.15);
+    for (const key of ['attention', 'relaxation', 'HR']) this.value[key] += (frame[key] - this.value[key]) * alpha;
+    this.value.coherence = this.value.relaxation; this.value.tension = 1 - this.value.coherence;
     return this.value;
   }
 }

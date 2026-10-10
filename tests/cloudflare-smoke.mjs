@@ -1,3 +1,5 @@
+import { sample } from './eeg-fixture.mjs';
+import { EEG_PROTOCOL } from '../src/core/eeg-protocol.mjs';
 import { LOCATIONS } from '../src/core/locations.mjs';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
@@ -34,8 +36,8 @@ async function session() {
   if (base.startsWith('https')) assert.match(r.headers.get('Set-Cookie'), /Secure/);
   return { token: data.token, headers: { Cookie: r.headers.get('Set-Cookie').split(';')[0], 'Content-Type': 'application/json' } };
 }
-async function socket(headers) {
-  const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/ws`, { headers, agent: wsAgent }); sockets.push(ws);
+async function socket(headers, device = false) {
+  const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/ws${device ? '?role=device' : ''}`, { headers, agent: wsAgent }); sockets.push(ws);
   const messages = []; ws.on('message', raw => messages.push(JSON.parse(raw)));
   await once(ws, 'open'); return { ws, messages };
 }
@@ -46,25 +48,36 @@ try {
   assert.equal((await fetch(`${base}/api/session`, { headers: { Origin: 'https://unrelated.example' } })).status, 403);
   record('independent secure sessions, unauthenticated input and cross-origin rejection');
   const sa = await socket(a.headers), sb = await socket(b.headers);
-  sa.ws.send(JSON.stringify({ type: 'sensor', frame }));
-  await waitFor(() => sa.messages.some(m => m.type === 'frame'));
+  const device = await socket({ Authorization: `Bearer ${a.token}` }, true);
+  device.ws.send(JSON.stringify({ type: 'ping', protocol: EEG_PROTOCOL, id: 1 }));
+  await waitFor(() => device.messages.some(m => m.lease));
+  const lease = device.messages.find(m => m.lease).lease;
+  device.ws.send(JSON.stringify({ ...sample(), lease }));
+  await waitFor(() => sa.messages.some(m => m.type === 'eeg-frame'));
   await new Promise(r => setTimeout(r, 300));
-  assert.equal(sb.messages.some(m => m.type === 'frame'), false);
+  assert.equal(sb.messages.some(m => m.type === 'eeg-frame'), false);
   const health = await (await fetch(`${base}/api/health`, { headers: a.headers })).json();
   assert.equal(health.sensorFresh, true); assert.equal(health.gateway, 'mindscape-demo');
   assert.equal(health.worlds.length,12);
   record('WebSocket sensor transport with strict visitor isolation');
-  const posted = await fetch(`${base}/api/frame`, { method: 'POST', headers: { Authorization: `Bearer ${a.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...frame, HR: 66 }) });
+  const auth = { Authorization: `Bearer ${a.token}`, 'Content-Type': 'application/json' };
+  for (const input of [frame, { type: 'sensor', frame }, { ...sample(), protocol: 'mindscape.v1' }]) {
+    const rejected = await fetch(`${base}/api/frame`, { method: 'POST', headers: auth, body: JSON.stringify(input) });
+    assert.equal(rejected.status, 400);
+  }
+  const claim = await (await fetch(`${base}/api/eeg/lease`, { method: 'POST', headers: auth, body: JSON.stringify({ protocol: EEG_PROTOCOL }) })).json();
+  const input = sample(2); input.frame.HR = 66; input.frame.ageMs.HR = 0; input.frame.sampleIds.HR = 2; input.capabilities.heartRate = true;
+  const posted = await fetch(`${base}/api/frame`, { method: 'POST', headers: auth, body: JSON.stringify({ ...input, ...claim }) });
   assert.equal(posted.status, 200); await waitFor(() => sa.messages.some(m => m.frame?.HR === 66));
-  sa.ws.send(JSON.stringify({ type: 'sensor', frame: { ...frame, HR: 999 } }));
-  await waitFor(() => sa.messages.some(m => m.type === 'error'));
+  const duplicate = await fetch(`${base}/api/frame`, { method: 'POST', headers: auth, body: JSON.stringify({ ...input, ...claim }) });
+  assert.equal(duplicate.status, 409);
   record('paired external device HTTP input and invalid sensor rejection');
   await new Promise(r => setTimeout(r, 2600));
   assert.equal((await (await fetch(`${base}/api/health`, { headers: a.headers })).json()).sensorFresh, false);
   record('stale signal detected after 2.5 seconds');
   assert.equal((await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: '{"text":""}' })).status, 400);
   assert.equal((await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: 'a'.repeat(17000) })).status, 400);
-  const r = await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ text: '想去雾中森林，听一听树叶的声音。', frame }) });
+  const r = await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ text: '想去雾中森林，听一听树叶的声音。' }) });
   assert.equal(r.status, 200); const route = await r.json();
   assert.equal(route.world, 'forest'); assert.equal(route.recommendedWorlds.length, 12);
   if (process.env.REQUIRE_AI === '1') { assert.equal(route.mode, 'ai-gateway'); assert.equal(route.gateway, 'mindscape-demo'); }
@@ -91,7 +104,7 @@ try {
     assert.equal(worker.status, 200); const workerCode=await worker.text();assert.match(workerCode, /recognizeForVideo/);assert.match(workerCode, /numHands: 1/);
     assert.match(worker.headers.get('cache-control'), /no-cache/);
     record('same-origin single-hand model checksum, WASM MIME and worker cache policy');
-    const named=await (await fetch(`${base}/api/route`,{method:'POST',headers:a.headers,body:JSON.stringify({text:'我想去埃菲尔铁塔看看巴黎。',frame})})).json();assert.equal(named.world,'eiffel');assert.equal(named.recommendedWorlds.length,12);if(process.env.REQUIRE_AI==='1')assert.equal(named.mode,'ai-gateway');record(`new landmark recommendation: ${named.mode} / ${named.world}`);
+    const named=await (await fetch(`${base}/api/route`,{method:'POST',headers:a.headers,body:JSON.stringify({text:'我想去埃菲尔铁塔看看巴黎。'})})).json();assert.equal(named.world,'eiffel');assert.equal(named.recommendedWorlds.length,12);if(process.env.REQUIRE_AI==='1')assert.equal(named.mode,'ai-gateway');record(`new landmark recommendation: ${named.mode} / ${named.world}`);
   }
   await mkdir('artifacts', { recursive: true });
   await writeFile(`artifacts/cloudflare-${mf ? 'local' : 'live'}.json`, JSON.stringify({ base, checks, ai: { mode: route.mode, model: route.model, gateway: route.gateway, requestId: route.gatewayRequestId, fallback: route.fallback }, at: new Date().toISOString() }, null, 2));

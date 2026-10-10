@@ -24,6 +24,8 @@ import { Leaf } from '@phosphor-icons/react/dist/csr/Leaf';
 import { Crosshair } from '@phosphor-icons/react/dist/csr/Crosshair';
 import { Circle } from '@phosphor-icons/react/dist/csr/Circle';
 import { DEFAULT_FRAME, SignalProcessor, demoFrame, chooseWorld } from './core/state.mjs';
+import { useEEG } from './useEEG';
+import { EEGPanel } from './EEGPanel';
 import { AudioEngine } from './audio';
 import './styles.css';
 import { GlobeExperience } from './GlobeExperience';
@@ -31,31 +33,30 @@ import { LOCATIONS, locationById, locationForWorld } from './core/locations.mjs'
 import { GlobeHemisphereEast } from '@phosphor-icons/react/dist/csr/GlobeHemisphereEast';
 import { GestureControls } from './GestureControls';
 import { VisualControls } from './VisualControls';
+import { GeoControls } from './GeoControls';
+import { GEO_WORLDS } from './core/geo-navigation.mjs';
 
 
 const WORLDS = Object.fromEntries(LOCATIONS.map((l,i) => [l.worldId, { number: String(i+1).padStart(2,'0'), name:l.name, en:l.english, title:[l.name,l.title], subtitle:l.description, intention:l.theme.join(' · '), icon:GlobeHemisphereEast }]));
 const INITIAL_LIVE = { ...DEFAULT_FRAME, coherence: DEFAULT_FRAME.relaxation, tension: 1 - DEFAULT_FRAME.relaxation };
-const fmt = value => Math.round(value * 100);
+const fmt = value => value == null ? '—' : Math.round(value * 100);
 
 const Scene = memo(function Scene({ engine, world, onStats, onError, onReady, density }) {
   const container = useRef();
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    let cancelled = false;
-    import('./renderer').then(({ WorldRenderer }) => {
-      if (cancelled) return;
-      try { engine.current = new WorldRenderer(container.current, onStats, onError); setReady(true); }
-      catch { onError('无法启动 WebGL。请使用支持硬件加速的浏览器后重试。'); }
-    }).catch(() => onError('渲染器加载失败，请刷新页面重试。'));
-    return () => { cancelled = true; engine.current?.dispose(); engine.current = null; };
-  }, []);
-  useEffect(() => {
-    if (!ready) return;
-    let cancelled = false;
-    onReady(false);
-    engine.current.loadWorld(world).then(() => { if (!cancelled) onReady(true); }).catch(error => { if (!cancelled) onError(error.message); });
-    return () => { cancelled = true; };
-  }, [world, ready]);
+    let cancelled=false, renderer;
+    setReady(false);onReady(false);
+    const module=GEO_WORLDS.has(world)?import('./geo-renderer'):import('./renderer');
+    module.then(async ({WorldRenderer})=>{
+      if(cancelled)return;
+      renderer=new WorldRenderer(container.current,onStats,onError);engine.current=renderer;
+      renderer.setDensity(density);
+      await renderer.loadWorld(world);
+      if(!cancelled){setReady(true);onReady(true);}
+    }).catch(error=>{if(!cancelled)onError(error.message||'场景加载失败，请重试。');});
+    return ()=>{cancelled=true;renderer?.dispose();if(engine.current===renderer)engine.current=null;};
+  }, [world]);
   useEffect(() => { engine.current?.setDensity(density); }, [density, ready]);
   return <div className="scene" ref={container} />;
 });
@@ -87,19 +88,17 @@ function App() {
   const [controls, setControls] = useState(false);
   const controlsDialog = useRef(null);
   const [quality, setQuality] = useState(1);
-  const [connected, setConnected] = useState(false);
-  const [backend, setBackend] = useState('local');
-  const session = useRef(null);
-  const pairing = useRef(null);
-  const [sensorFresh, setSensorFresh] = useState(false);
+  const [feedbackEnabled, setFeedbackEnabled] = useState(false);
+  const [volume, setVolume] = useState(.5);
+  const eeg = useEEG({ source, paused, enabled: feedbackEnabled });
+  const session = eeg.session;
+  const backend = eeg.transport.backend;
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [stats, setStats] = useState({ fps: 0, points: 0 });
   const [elapsed, setElapsed] = useState(0);
   const [demoElapsed, setDemoElapsed] = useState(0);
-  const [calibration, setCalibration] = useState(-1);
-  const [baseline, setBaseline] = useState(null);
   const [history, setHistory] = useState([]);
   const [intent, setIntent] = useState('');
   const [routing, setRouting] = useState(false);
@@ -108,35 +107,12 @@ function App() {
   const engine = useRef(null);
   const processor = useRef(new SignalProcessor());
   const audioEngine = useRef(new AudioEngine());
-  const sensor = useRef(null);
   const speech = useRef(null);
   const clock = useRef({ elapsed: 0, demo: 0, calibration: -1 });
   const settings = useRef({});
-  settings.current = { frame, source, mode, paused, audio, world, stage, selectedId };
+  settings.current = { frame, source, mode, paused, audio, world, stage, selectedId, feedbackEnabled, volume };
   const dialog = useRef();
   const currentWorld = WORLDS[world];
-
-  useEffect(() => {
-    let stopped = false, retry, ws;
-    async function connect() {
-      try {
-        session.current = fetch('/api/session').then(response => { if (!response.ok) throw new Error('Session unavailable'); return response.json(); });
-        const data = await session.current;
-        if (stopped) return;
-        setBackend(data.backend); pairing.current = data.token;
-      } catch { if (!stopped) retry = setTimeout(connect, 2500); return; }
-      ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
-      ws.onopen = () => { if (!stopped) setConnected(true); };
-      ws.onmessage = event => {
-        try { const data = JSON.parse(event.data); if (data.type === 'frame') sensor.current = { ...data, arrived: performance.now() }; }
-        catch { /* Ignore invalid transport messages, keep last good state. */ }
-      };
-      ws.onclose = () => { if (!stopped) { setConnected(false); retry = setTimeout(connect, 1800); } };
-      ws.onerror = () => ws.close();
-    }
-    connect();
-    return () => { stopped = true; clearTimeout(retry); ws?.close(); };
-  }, []);
 
   useEffect(() => {
     let raf, previous = performance.now(), lastUI = 0, lastHistory = 0;
@@ -145,30 +121,22 @@ function App() {
       const config = settings.current, time = clock.current;
       if (!config.paused && !document.hidden) time.elapsed += dt;
       let input = config.frame;
-      const fresh = sensor.current && now - sensor.current.arrived < 2500 && !sensor.current.stale;
-      if (config.source === 'device') input = fresh ? sensor.current.frame : { ...processor.current.value, signalQuality: 0 };
-      else if (config.mode === 'demo') {
+      if (config.mode === 'demo') {
         if (!config.paused && !document.hidden) time.demo += dt;
-        input = demoFrame(time.demo);
-        if (time.demo >= 60) { setMode('manual'); setFrame(demoFrame(60)); setToast('60 秒旅程已完成。世界已归位。'); }
+        if (config.source === 'simulator') input = demoFrame(time.demo);
+        if (time.demo >= 60) { setMode('manual'); if (config.source === 'simulator') setFrame(demoFrame(60)); setToast('60 秒呼吸引导已完成。'); }
       }
-      const value = processor.current.update(input, dt);
+      const device = eeg.processor.current;
+      const value = config.source === 'device'
+        ? device.tick(now, { connected: eeg.transportRef.current.connected && eeg.transportRef.current.bridge && eeg.transportRef.current.serial === 'connected', paused: config.paused, hidden: document.hidden, enabled: config.feedbackEnabled })
+        : config.paused || document.hidden ? processor.current.value : processor.current.update(input, dt);
       if (engine.current) { engine.current.state = value; engine.current.active = !config.paused; }
-      if (time.calibration >= 0 && !config.paused) {
-        time.calibration += dt;
-        if (time.calibration >= 10) {
-          const ok = processor.current.finishCalibration(); time.calibration = -1;
-          setBaseline(processor.current.baseline);
-          setToast(ok ? '基线校准完成，已应用个人放松基线。' : '有效信号不足，请恢复信号后重新校准。');
-        }
-      }
       if (now - lastUI > 125) {
-        setLive({ ...value }); setElapsed(time.elapsed); setDemoElapsed(time.demo); setCalibration(time.calibration);
-        setSensorFresh(!!fresh);
-        audioEngine.current.update(value, config.world, config.audio && !config.paused);
+        setLive({ ...value }); setElapsed(time.elapsed); setDemoElapsed(time.demo);
+        audioEngine.current.update(value, config.world, config.audio && !config.paused, config.volume);
         lastUI = now;
       }
-      if (now - lastHistory > 500 && !config.paused && !document.hidden) {
+      if (config.source === 'simulator' && now - lastHistory > 500 && !config.paused && !document.hidden) {
         setHistory(h => [...h.slice(-59), value.coherence]); lastHistory = now;
       }
       raf = requestAnimationFrame(tick);
@@ -190,28 +158,29 @@ function App() {
     window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler);
   }, []);
   useEffect(() => {
-    if (import.meta.env.DEV) window.__mindscape = { getState: () => ({ world: settings.current.world, stage: settings.current.stage, selectedId: settings.current.selectedId, renderer: engine.current?.kind, orientation: engine.current?.globe?.quaternion.toArray(), ready: engine.current?.ready, source: settings.current.source, state: { ...processor.current.value }, points: engine.current?.count, audio: audioEngine.current.context?.state }) };
+    if (import.meta.env.DEV) window.__mindscape = { getState: () => ({ world: settings.current.world, stage: settings.current.stage, selectedId: settings.current.selectedId, renderer: engine.current?.kind, orientation: engine.current?.globe?.quaternion.toArray(), ready: engine.current?.ready, source: settings.current.source, state: { ...(settings.current.source === 'device' ? eeg.processor.current.value : processor.current.value) }, points: engine.current?.count, audio: audioEngine.current.context?.state }) };
     return () => { delete window.__mindscape; };
   }, []);
 
   async function copyPairing() {
-    try {
-      const data = await (await fetch('/api/session')).json();
-      pairing.current = data.token;
-      await navigator.clipboard.writeText(JSON.stringify({ http: `${location.origin}/api/frame`, websocket: `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`, ...(data.token ? { authorization: `Bearer ${data.token}`, expiresAt: data.expiresAt } : {}) }, null, 2));
-      setToast('设备接入配置已复制，仅分享给自己的采集程序。');
-    } catch { setToast('复制失败，请通过同源 /api/session 获取设备配对凭据。'); }
+    try { await eeg.copyPairing(); setToast('配对配置已复制，请粘贴到本地 EEG Studio。'); }
+    catch (e) { setToast(e.message || '复制失败'); }
+  }
+  function switchSource(next) {
+    if (source === next) return;
+    eeg.processor.current.reset(); processor.current = new SignalProcessor();
+    setSource(next); setMode('manual'); setHistory([]); setFeedbackEnabled(false);
+    setLive(next === 'device' ? eeg.processor.current.value : INITIAL_LIVE);
   }
   function setValue(key, value) { setMode('manual'); setFrame(v => ({ ...v, [key]: value })); }
-  function preset(relaxation, HR) { setSource('simulator'); setMode('manual'); setFrame(v => ({ ...v, relaxation, HR, signalQuality: 0.98 })); setPaused(false); }
+  function preset(relaxation, HR) { switchSource('simulator'); setMode('manual'); setFrame(v => ({ ...v, relaxation, HR, signalQuality: 0.98 })); setPaused(false); }
   function runDemo() {
-    if (mode === 'demo') { setMode('manual'); setFrame(demoFrame(clock.current.demo)); return; }
-    clock.current.demo = 0; setDemoElapsed(0); setSource('simulator'); setMode('demo'); setPaused(false);
-    setGuide('跟随 60 秒引导，见证世界从破碎到完整。');
+    if (mode === 'demo') { setMode('manual'); if (source === 'simulator') setFrame(demoFrame(clock.current.demo)); return; }
+    clock.current.demo = 0; setDemoElapsed(0); setMode('demo'); setPaused(false);
+    setGuide(source === 'device' ? '60 秒呼吸引导 · 保持真实设备数据，未测量呼吸。' : '跟随 60 秒引导，见证世界从破碎到完整。');
   }
   function calibrate() {
-    if (live.signalQuality < 0.4) { setToast('请先恢复有效信号再校准。'); return; }
-    processor.current.beginCalibration(); clock.current.calibration = 0; setCalibration(0);
+    if (!eeg.processor.current.beginCalibration()) setToast('请等待专注与冥想各连续 3 个有效新读数，再开始校准。');
   }
   async function toggleAudio() {
     try { if (!audio) await audioEngine.current.start(); setAudio(v => !v); }
@@ -255,7 +224,7 @@ function App() {
     let result;
     try {
       await session.current;
-      const response = await fetch('/api/route', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: intent, frame: live }), signal: AbortSignal.timeout(15000) });
+      const response = await fetch('/api/route', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: intent }), signal: AbortSignal.timeout(15000) });
       if (!response.ok) throw new Error('推荐服务暂不可用');
       result = await response.json();
       if (result.fallback && sequence === routeSequence.current) setToast(result.fallback === 'rate-limited' ? 'AI 推荐额度暂时用完，已使用本地规则。' : 'AI 暂不可用，已使用本地规则。');
@@ -287,7 +256,7 @@ function App() {
   const inhaling = breathTime < 4;
   const breathProgress = inhaling ? breathTime / 4 : 1 - (breathTime - 4) / 6;
   const currentInput = mode === 'demo' ? demoFrame(demoElapsed) : frame;
-  const status = live.signalQuality < 0.4 ? '信号待恢复' : live.coherence < 0.35 ? '正在漂散' : live.coherence < 0.7 ? '正在归位' : '渐入宁静';
+  const status = source === 'device' ? live.status || '等待设备' : live.signalQuality < 0.4 ? '信号待恢复' : live.coherence < 0.35 ? '正在漂散' : live.coherence < 0.7 ? '正在归位' : '渐入宁静';
   const journey = mode === 'demo' ? demoElapsed < 12 ? '01 / 释放纷乱' : demoElapsed < 45 ? '02 / 慢慢归位' : '03 / 安住此刻' : '自由探索';
   const stages = ['connect', 'speak', 'explore', 'enter', 'transform'];
   const stageNames = ['连接', '心意', '探索', '抵达', '共鸣'];
@@ -308,7 +277,7 @@ function App() {
           <div className="eyebrow"><span className="short-line"/> WORLD {currentWorld.number} <span>/</span> {currentWorld.en}</div>
           <h1>{currentWorld.name}</h1>
           <p>{currentWorld.subtitle}</p>
-          <div className="world-tag"><currentWorld.icon size={14}/>{currentWorld.intention}<span>·</span> 主题点云 · 非实地扫描</div>
+          <div className="world-tag"><currentWorld.icon size={14}/>{currentWorld.intention}<span>·</span> {GEO_WORLDS.has(world)?'真实地理 · 自由探索':'主题点云 · 非实地扫描'}</div>
         </div>
         <div className="scene-tools">
           <button className="back-to-globe" onClick={() => navigateStage('explore', locationForWorld(world).id)}><GlobeHemisphereEast size={16}/> 返回地球</button>
@@ -316,6 +285,7 @@ function App() {
           <button className="icon-button glass" aria-label="重置视角" title="重置视角" onClick={() => engine.current?.resetCamera()}><ArrowCounterClockwise size={18}/></button>
           <button className="icon-button glass" aria-label={immersive ? '退出沉浸模式' : '进入沉浸模式'} title="沉浸模式 (F)" onClick={() => setImmersive(v => !v)}>{immersive ? <ArrowsIn size={18}/> : <ArrowsOut size={18}/>}</button>
         </div>
+        <GeoControls engine={engine} ready={loaded} world={world} stats={stats.geo}/>
         <VisualControls engine={engine} ready={loaded} world={world}/>
         <GestureControls engine={engine} paused={paused} world={world} ready={loaded}/>
         {!loaded && !error && <div className="scene-message"><CircleNotch className="spin" size={27}/><span>正在构建{currentWorld.name}…</span><small>让每一个微粒找到自己的位置</small></div>}
@@ -326,41 +296,37 @@ function App() {
           <div><strong>{paused ? '停留片刻' : inhaling ? '慢慢吸气' : '缓缓呼气'}<span>{paused ? 'PAUSED' : inhaling ? 'BREATHE IN' : 'BREATHE OUT'}</span></strong><p>{paused ? '准备好后，继续这段旅程' : '吸气 4 秒，呼气 6 秒。不必用力。'}</p></div>
           <span className="breath-count">{paused ? '—' : Math.ceil(inhaling ? 4 - breathTime : 10 - breathTime).toString().padStart(2, '0')}</span>
         </div>
-        <div className="scene-bottom"><span>拖动探索视角 <i/> 滚轮拉近世界</span><span>{stats.points ? (stats.points / 1000).toFixed(1) + 'K POINTS' : 'LOADING'}<i/>{stats.fps || '—'} FPS</span></div>
+        <div className="scene-bottom"><span>{GEO_WORLDS.has(world)?'拖动平移 · 右键环绕 · 滚轮缩放':'拖动探索视角 · 滚轮拉近世界'}</span><span>{stats.points ? (stats.points / 1000).toFixed(1) + 'K POINTS' : 'LOADING'}<i/>{stats.fps || '—'} FPS</span></div>
         </>}
       </section>
 
       <dialog ref={controlsDialog} className="controls-dialog" aria-label="实时状态与模拟器" onCancel={() => setControls(false)} onClick={e => { if(e.target === controlsDialog.current) setControls(false); }}><div className="control-panel"><button className="icon-button close-dialog" aria-label="关闭共鸣面板" onClick={() => setControls(false)}><X size={20}/></button>
-        <div className="panel-heading"><div><Waveform size={18}/><h2>身心共鸣</h2></div><span className="small-tag">LIVE</span></div>
-        <div className="source-tabs" role="group" aria-label="数据来源"><button className={source === 'simulator' ? 'active' : ''} aria-pressed={source === 'simulator'} onClick={() => { setSource('simulator'); setMode('manual'); }}><SlidersHorizontal size={14}/> 模拟器</button><button className={source === 'device' ? 'active' : ''} aria-pressed={source === 'device'} onClick={() => { setSource('device'); setMode('manual'); }}><Broadcast size={14}/> 设备接入</button></div>
-        <div className={`signal-line ${live.signalQuality < 0.4 ? 'weak' : ''}`}><span className="signal-bars"><i/><i/><i/><i/></span><span>{source === 'simulator' ? '模拟信号' : sensorFresh ? '设备数据接收中' : '等待设备数据'}<b>{fmt(live.signalQuality)}%</b></span><span className="signal-status">{live.signalQuality >= 0.4 ? '稳定' : '已保持画面'}</span></div>
-        <div className="coherence-block"><div className="metric-label"><span>{stage === 'transform' ? '世界完整度' : '此刻的安定感'}</span><span>COHERENCE</span></div><div className="coherence-number"><strong>{fmt(live.coherence)}<span>%</span></strong><span className="state-pill"><i/>{status}</span></div><div className="coherence-track"><span style={{ transform: `scaleX(${live.coherence})` }}/></div><div className="scale-labels"><span>漂散</span><span>归位</span><span>完整</span></div></div>
-        <div className="mini-metrics"><div><span><Crosshair size={13}/> 专注度</span><strong>{fmt(live.attention)}<small>%</small></strong></div><div><span><Heart size={13}/> 心率</span><strong>{Math.round(live.HR)}<small>BPM</small></strong></div><div><span><Leaf size={13}/> 放松度</span><strong>{fmt(live.relaxation)}<small>%</small></strong></div></div>
-        <div className="trend"><div><span>内心的节奏</span><span>过去 30 秒</span></div><Trace history={history}/></div>
-
-        <div className="panel-section simulator-section">
-          <div className="section-heading"><h3>{source === 'device' ? '传感器连接' : '感受世界的变化'}</h3><span>{source === 'device' ? 'WEBSOCKET' : mode === 'demo' ? '自动演示中' : '手动调节'}</span></div>
-          {source === 'device' ? <div className="device-info"><p><i className={connected ? 'online' : ''}/>{connected ? '实时桥接服务已连接' : '正在重连实时服务…'}</p><code>{location.protocol === 'https:' ? 'wss' : 'ws'}://{location.host}/ws</code><p className="device-hint">发送 attention、relaxation、HR 和 signalQuality。收到有效数据后，世界会立即响应。</p><button className="text-button" onClick={copyPairing}>复制设备接入配置 <ArrowUpRight size={13}/></button><button className="text-button" onClick={() => setHelp(true)}>查看接入协议 <ArrowUpRight size={13}/></button></div> : <>
+        <div className="panel-heading"><div><Waveform size={18}/><h2>氛围与设备</h2></div><span className="small-tag">LIVE</span></div>
+        <div className="source-tabs" role="group" aria-label="数据来源"><button className={source === 'simulator' ? 'active' : ''} aria-pressed={source === 'simulator'} onClick={() => switchSource('simulator')}><SlidersHorizontal size={14}/> 模拟器</button><button className={source === 'device' ? 'active' : ''} aria-pressed={source === 'device'} onClick={() => switchSource('device')}><Broadcast size={14}/> 设备接入</button></div>
+        {source === 'device' ? <EEGPanel connection={eeg.transport} live={live} processor={eeg.processor.current} enabled={feedbackEnabled && !eeg.processor.current.autoPaused}
+          onToggle={() => { if (eeg.processor.current.autoPaused) { eeg.processor.current.resume(); setFeedbackEnabled(true); } else setFeedbackEnabled(v => !v); }} onCopy={copyPairing} onCalibrate={calibrate}/> : <>
+          <div className="signal-line"><span>模拟信号 · 非设备测量</span></div>
+          <div className="mini-metrics"><div><span>专注模拟分</span><strong>{fmt(live.attention)}</strong></div><div><span>模拟心率</span><strong>{live.HR == null ? '—' : Math.round(live.HR)}<small>BPM</small></strong></div><div><span>冥想模拟分</span><strong>{fmt(live.relaxation)}</strong></div></div>
+          <Trace history={history}/><div className="panel-section simulator-section">
             <div className="presets"><button onClick={() => preset(0.12, 94)}>紧绷</button><button onClick={() => preset(0.52, 78)}>舒缓</button><button onClick={() => preset(0.96, 62)}>深度平静</button></div>
             {[
               ['relaxation', '放松度', '控制世界聚散', 0, 1, 0.01],
-              ['attention', '专注度', '控制视野连接', 0, 1, 0.01],
+              ['attention', '专注度', '控制光点明亮度', 0, 1, 0.01],
               ['HR', '心率', '控制世界脉动', 40, 140, 1],
               ['signalQuality', '信号质量', '低于 40% 保持画面', 0, 1, 0.01],
             ].map(([key, label, hint, min, max, step]) => <div className="slider-field" key={key}><label htmlFor={key}><span>{label}<small>{hint}</small></span><output>{key === 'HR' ? Math.round(currentInput[key]) : fmt(currentInput[key])}<span>{key === 'HR' ? ' BPM' : '%'}</span></output></label><input id={key} type="range" min={min} max={max} step={step} value={currentInput[key]} onChange={e => setValue(key, Number(e.target.value))} style={{ '--range': `${(currentInput[key] - min) / (max - min) * 100}%` }}/></div>)}
-          </>}
-          <button className="calibrate text-button" onClick={calibrate} disabled={calibration >= 0}><Crosshair size={13}/>{calibration >= 0 ? `校准中 · ${Math.ceil(10 - calibration)} 秒` : baseline !== null ? `基线已校准 ${fmt(baseline)}% · 重新校准` : '校准个人基线'}<span>{calibration >= 0 ? '保持自然呼吸' : '10s'}</span></button>
-        </div>
+          </div></>}
+        <label className="eeg-volume">环境音量<input aria-label="环境音量" type="range" min="0" max="1" step=".01" value={volume} onChange={e => setVolume(Number(e.target.value))}/></label>
         {(stage === 'explore' || stage === 'transform') && <div className="panel-section intention-section"><div className="section-heading"><h3>此刻，你想去哪里？</h3><span>{backend === 'cloudflare' ? 'AI 推荐' : '本地规则'}</span></div><form className="intent-input" onSubmit={route}><label className="sr-only" htmlFor="intent">描述你想去的地方或此刻的心情</label><input id="intent" value={intent} maxLength={500} onChange={e => setIntent(e.target.value)} placeholder="想潜入深海，放空一下…"/><button type="button" className={listening ? 'listening' : ''} onClick={voice} aria-label={listening ? '结束语音输入' : '语音输入'}><Microphone size={16}/></button><button type="submit" disabled={routing} aria-label="选择适合的世界">{routing ? <CircleNotch size={16} className="spin"/> : <ArrowRight size={16}/>}</button></form></div>}
         <div className="panel-actions"><button className="primary demo-button" disabled={stage === 'enter' || routing} onClick={advanceJourney}>{mode === 'demo' ? <Circle size={15} weight="fill"/> : <Play size={14} weight="fill"/>}{stage === 'transform' ? mode === 'demo' ? '结束演示' : '开启 60 秒旅程' : stage === 'connect' ? '继续旅程' : stage === 'speak' ? '查看目的地推荐' : stage === 'enter' ? '正在抵达目的地' : selectedId ? '确认出发' : '选择目的地'}<span>{mode === 'demo' ? `${Math.min(60, Math.floor(demoElapsed)).toString().padStart(2, '0')} / 60` : <ArrowUpRight size={17}/>}</span></button><div className="panel-footnote">{source === 'simulator' ? '模拟数据 · 无需佩戴设备' : '设备数据 · 信号异常自动保持画面'}</div></div>
       </div></dialog>
     </main>
 
-    <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.05.0</span></div></footer>
+    <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.07.0</span></div></footer>
     <div className="sr-only" role="status" aria-live="polite">{stage === 'transform' ? `${currentWorld.name}。${status}。` : ''}</div>
     {toast && <div className="toast" role="status"><Check size={15}/>{toast}</div>}
 
-    <dialog ref={dialog} className="help-dialog" onCancel={() => setHelp(false)} onClick={e => { if (e.target === dialog.current) setHelp(false); }}><div className="dialog-content"><button className="icon-button close-dialog" aria-label="关闭说明" onClick={() => setHelp(false)}><X size={20}/></button><div className="eyebrow">A WORLD WITHIN YOU</div><h2>用呼吸，让世界归位。</h2><p>从连接与表达心情开始，在三维地球上探索遍布世界的 12 个地点。推荐只提供方向，点击地点并确认后才会飞入世界；随时可返回地球。地点是主题入口，场景为原创点云，并非这些地点的实地重建。</p><p>进入任意点云场景后，调节模拟器，亲眼看见点云从漂散回到原位。也可以开启 60 秒旅程，跟随吸气 4 秒、呼气 6 秒的节奏。</p><div className="help-mappings"><span>放松度 → 世界聚散</span><span>专注度 → 镜头与明亮度</span><span>心率 → 世界微脉动</span><span>信号不足 → 保持上次状态</span></div><h3>调出你的光影</h3><p>进入场景后，打开「视觉调节」，选择清晰、流光或梦境。可对照原始点云、粒子流动和完整光影，调节粒子尺寸、聚散、光晕与余辉。更多细节中可以改变流动速度和色彩。转动镜头时余辉会收起，让主体保持清楚。</p><h3>用手轻触世界</h3><p>在场景中开启手势并允许摄像头，仅识别一只手。张开手掌或握拳后移动手，镜头跟随移动；拇指食指捏住后，上移持续放大、下移持续缩小；离中点越远速度越快，回到中点暂停，松开立即停止。其余手指自然舒展，再次捏合会以当前位置重新设定中点。切换手型时请稍停片刻。摄像头画面由本机 MediaPipe 处理，不上传。关闭手势或返回地球会释放摄像头。鼠标与触摸可以随时接管；将手移出画面再放回，即可恢复手势。</p><h3>连接自己的设备</h3><p>实时服务接收标准化数据。云端先在「设备接入」复制配置，将配对凭据放入 Authorization 请求头；凭据有效期 24 小时，只连接当前会话。设备采集程序可通过 HTTP POST <code>/api/frame</code> 或 WebSocket <code>/ws</code> 发送以下协议：</p><pre>{JSON.stringify({ type: 'sensor', frame: { attention: 0.58, relaxation: 0.76, HR: 72, signalQuality: 0.98 } }, null, 2)}</pre><p className="help-note">HTTP 接口直接发送 frame 内的对象。建议设备以 25Hz 持续发送；2.5 秒未收到新数据即保持画面。云端按会话即时转发，不保存传感器历史。硬件采集驱动需按设备另行接入。</p><h3>关于这个 demo</h3><p>12 个世界均为原创程序生成的三维点云，使用 GPU 位移与柔和点精灵渲染，并非摄影重建的 3DGS。{backend === 'cloudflare' ? '主题推荐通过 Cloudflare AI Gateway 调用模型，仅发送心意文字和粗略放松状态，不发送心率或原始脑电；不可用时明确回退到本地规则。' : '主题选择使用本地规则，未调用 AI。'}契合分用于体验排序，不是健康评估；语音使用浏览器识别能力，支持情况因浏览器而异。环境音由本地 Web Audio 实时合成。</p><div className="keyboard-help"><span><kbd>Space</kbd> 暂停 / 继续</span><span><kbd>F</kbd> 沉浸模式</span><span><kbd>Esc</kbd> 退出</span></div><button className="primary" onClick={() => setHelp(false)}>开始探索 <ArrowRight size={16}/></button></div></dialog>
+    <dialog ref={dialog} className="help-dialog" onCancel={() => setHelp(false)} onClick={e => { if (e.target === dialog.current) setHelp(false); }}><div className="dialog-content"><button className="icon-button close-dialog" aria-label="关闭说明" onClick={() => setHelp(false)}><X size={20}/></button><div className="eyebrow">A WORLD WITHIN YOU</div><h2>用呼吸，让世界归位。</h2><p>从连接与表达心情开始，在三维地球上探索遍布世界的 12 个地点。推荐只提供方向，点击地点并确认后才会飞入世界；随时可返回地球。富士山与大峡谷使用真实地理数据，可平移探索、跳转地标和查看来源；其余地点为原创主题点云。</p><p>进入任意点云场景后，调节模拟器，亲眼看见点云从漂散回到原位。也可以开启 60 秒旅程，跟随吸气 4 秒、呼气 6 秒的节奏。</p><div className="help-mappings"><span>放松度 → 世界聚散</span><span>专注度 → 限幅亮度</span><span>心率（可选）→ 微脉动</span><span>信号不足 → 保持上次状态</span></div><h3>调出你的光影</h3><p>进入场景后，打开「视觉调节」，选择清晰、流光或梦境。可对照原始点云、粒子流动和完整光影，调节粒子尺寸、聚散、光晕与余辉。更多细节中可以改变流动速度和色彩。转动镜头时余辉会收起，让主体保持清楚。</p><h3>用手轻触世界</h3><p>在场景中开启手势并允许摄像头，仅识别一只手。张开手掌或握拳后移动手，镜头跟随移动；拇指食指捏住后，上移持续放大、下移持续缩小；离中点越远速度越快，回到中点暂停，松开立即停止。其余手指自然舒展，再次捏合会以当前位置重新设定中点。切换手型时请稍停片刻。摄像头画面由本机 MediaPipe 处理，不上传。关闭手势或返回地球会释放摄像头。鼠标与触摸可以随时接管；将手移出画面再放回，即可恢复手势。</p><h3>连接自己的设备</h3><p>运行 <code>npm run eeg</code>，在本页「设备接入」复制配置，到本地 EEG Studio 的「连接 Mindscape」粘贴并开始联动。唯一协议为 <code>mindscape.eeg.v2</code>，配置有效期 24 小时。约每秒真实更新一次，不补发历史值。原始字节与频段保留在本地。</p><p>专注与冥想为相对分，0 表示无效；无心率显示未接入。个人校准至少 30 秒及每项 25 个独立样本，最多 60 秒，暂停和隐藏页面不计时。接触不良或字段 2.5 秒未更新时保持对应氛围；离线 10 秒暂停联动。镜头保持手动或单手控制。</p><h3>关于这个 demo</h3><p>富士山山顶使用静冈县实测点云，外围及大峡谷由真实高程构建地形点云，并按视距分层加载；其余 10 个世界为原创程序点云。所有场景均非 3DGS。{backend === 'cloudflare' ? '主题推荐通过 Cloudflare AI Gateway 调用模型，仅发送主动提交的心意文字，不发送脑电或心率指标；不可用时明确回退到本地规则。' : '主题选择使用本地规则，未调用 AI。'}契合分用于体验排序，不是健康评估；语音使用浏览器识别能力，支持情况因浏览器而异。环境音由本地 Web Audio 实时合成。</p><div className="keyboard-help"><span><kbd>Space</kbd> 暂停 / 继续</span><span><kbd>F</kbd> 沉浸模式</span><span><kbd>Esc</kbd> 退出</span></div><button className="primary" onClick={() => setHelp(false)}>开始探索 <ArrowRight size={16}/></button></div></dialog>
   </div>;
 }
 

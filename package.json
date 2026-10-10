@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "eeg": "node server/eeg.mjs",
+    "test:eeg": "python3 -m unittest discover -s tests -p 'test_thinkgear.py' && node --test tests/eeg-model.test.mjs",
     "dev": "node server/index.mjs",
     "build": "vite build",
     "start": "NODE_ENV=production node server/index.mjs",
@@ -11,13 +13,20 @@
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "node tests/browser.mjs",
     "dev:cloudflare": "npm run build && wrangler dev --port 8787",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run build:cloudflare && wrangler deploy",
     "deploy:gateway": "node scripts/cloudflare-gateway.mjs",
-    "test:cloudflare": "node tests/cloudflare-smoke.mjs"
+    "test:cloudflare": "node tests/cloudflare-smoke.mjs",
+    "test:geo": "node --test tests/geospatial.test.mjs && node tests/geospatial-browser.mjs",
+    "test:geo:ui": "node tests/geospatial-ui.mjs",
+    "test:geo:visual": "node tests/geospatial-visual.mjs",
+    "build:cloudflare": "vite build --mode cloudflare",
+    "test:eeg:integration": "node tests/eeg-integration.mjs",
+    "test:eeg:browser": "node tests/eeg-browser.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",
     "@phosphor-icons/react": "2.1.10",
+    "3d-tiles-renderer": "^0.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "three": "0.180.0",

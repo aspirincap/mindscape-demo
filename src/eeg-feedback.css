@@ -1,0 +1,11 @@
+.eeg-feedback { display:grid; gap:14px; font-size:12px; line-height:1.7; }
+.eeg-status-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.eeg-status-grid div { padding:12px; border:1px solid #ffffff14; border-radius:8px; }
+.eeg-status-grid span,.eeg-readings span { display:block; color:#b5a9ca; font-size:11px; }
+.eeg-status-grid b { font-weight:400; }
+.eeg-readings { display:flex; gap:24px; justify-content:space-between; }
+.eeg-readings strong { font-size:24px; font-weight:400; }
+.eeg-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.eeg-controls-readout,.eeg-trend span { color:#b5a9ca; font-size:11px; }
+.eeg-trend svg { width:100%; height:56px; color:#a389fa; background:#ffffff03; }
+.eeg-volume { display:flex; align-items:center; gap:12px; font-size:12px; }

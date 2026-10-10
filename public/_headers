@@ -20,3 +20,6 @@
 
 /mediapipe/gesture-worker-v1.js
   Cache-Control: no-cache
+
+/terrain/*
+  Cache-Control: no-cache

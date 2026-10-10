@@ -1,0 +1,152 @@
+{
+  "id": "fuji",
+  "name": "富士山",
+  "version": "b2d8b0a3349b",
+  "bbox": [
+    138.56,
+    35.25,
+    138.89,
+    35.57
+  ],
+  "crs": "EPSG:32654",
+  "projectedBounds": [
+    278002.6950029924,
+    3902808.2952423105,
+    308789.63208229525,
+    3938996.670354741
+  ],
+  "origin": [
+    293396.16354264383,
+    3920902.482798526
+  ],
+  "width": 30786.93707930285,
+  "depth": 36188.37511243066,
+  "heightRange": [
+    149.0686492919922,
+    3772.17822265625
+  ],
+  "heightGrid": {
+    "url": "/terrain/fuji/height.f32",
+    "size": 513
+  },
+  "tileset": "/terrain/fuji/tileset.json",
+  "satellite": "/terrain/fuji/satellite.jpg",
+  "selection": "/terrain/fuji/selection.jpg",
+  "satelliteDate": "2026-02-15",
+  "nativeElevationM": 10,
+  "terrainPointSpacingM": [
+    15.032684120753345,
+    17.670105035366532
+  ],
+  "pointCount": 5115778,
+  "tileCount": 426,
+  "downloadBytes": 102305768,
+  "pois": [
+    {
+      "id": "summit",
+      "name": "富士山顶",
+      "lng": 138.7274,
+      "lat": 35.3606,
+      "x": 121.18347589176847,
+      "z": 5498.465864856262,
+      "distance": 2200
+    },
+    {
+      "id": "kawaguchi",
+      "name": "河口湖",
+      "lng": 138.755,
+      "lat": 35.518,
+      "x": 3026.186473871523,
+      "z": -11905.038685676176,
+      "distance": 6500
+    },
+    {
+      "id": "forest",
+      "name": "青木原森林",
+      "lng": 138.631,
+      "lat": 35.466,
+      "x": -8358.79607164074,
+      "z": -6399.568738641683,
+      "distance": 6500
+    },
+    {
+      "id": "yamanaka",
+      "name": "山中湖",
+      "lng": 138.864,
+      "lat": 35.416,
+      "x": 12667.026624140388,
+      "z": -370.48394420789555,
+      "distance": 6500
+    }
+  ],
+  "sources": {
+    "satellite": [
+      {
+        "id": "S2B_54STE_20260215_1_L2A",
+        "date": "2026-02-15T01:37:20.994000Z",
+        "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/54/S/TE/2026/2/S2B_54STE_20260215_1_L2A/TCI.tif",
+        "nativeResolutionM": 10,
+        "cloudCoverScenePercent": 0.283016
+      }
+    ],
+    "elevation": {
+      "provider": "国土地理院 GSI",
+      "nativeResolutionM": 10,
+      "verticalDatum": "GSI elevation (metres, Japanese national height datum)",
+      "url": "https://maps.gsi.go.jp/development/ichiran.html",
+      "tileTemplate": "https://cyberjapandata.gsi.go.jp/xyz/dem_png/14/{x}/{y}.png",
+      "tiles": 340
+    },
+    "lidar": {
+      "provider": "VIRTUAL SHIZUOKA",
+      "license": "CC BY 4.0",
+      "archives": [
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3541.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3551.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3542.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3552.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3561.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3562.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3543.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3553.zip",
+        "https://virtual-shizuoka.s3.ap-northeast-1.amazonaws.com/2021/LP/Ground/08/ME/35/08ME3563.zip"
+      ],
+      "meshes": [
+        "08ME3541",
+        "08ME3551",
+        "08ME3542",
+        "08ME3552",
+        "08ME3561",
+        "08ME3562",
+        "08ME3543",
+        "08ME3553",
+        "08ME3563"
+      ],
+      "horizontalCRS": "EPSG:6676",
+      "catalog": "https://www.geospatial.jp/ckan/dataset/shizuoka-2021-pointcloud"
+    }
+  },
+  "limitations": "高程地形为高度场，不包含倒悬或洞穴。点云按视距分层抽稀；卫星颜色为 10 米像元。",
+  "attribution": [
+    "Contains modified Copernicus Sentinel data. Processed by Element 84 / Mindscape.",
+    "出典：国土地理院；加工：Mindscape。",
+    "VIRTUAL SHIZUOKA / 静岡県 · CC BY 4.0；点云保留实测位置与原生 RGB，经体素抽稀。"
+  ],
+  "survey": {
+    "rawPoints": 105106003,
+    "displayPoints": 925539,
+    "spacingM": 1.5,
+    "bounds": [
+      [
+        -148.76168823242188,
+        3458.1650390625,
+        4779.669921875
+      ],
+      [
+        1073.4205322265625,
+        3784.68603515625,
+        5709.23779296875
+      ]
+    ]
+  }
+}

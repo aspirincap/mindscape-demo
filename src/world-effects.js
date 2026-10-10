@@ -37,9 +37,10 @@ class AccentTrailPass extends Pass {
     renderer.autoClear=true;renderer.setClearColor(0,0);
     if(!this.valid){for(const target of [this.historyA,this.historyB]){renderer.setRenderTarget(target);renderer.clear();}}
     // Correct screen-space point size for the half-resolution accent buffer.
-    const material=this.scene.children[0]?.material,ratio=material?.uniforms.uPixelRatio;
-    const previousRatio=ratio?.value;if(ratio)ratio.value*=.5;
-    renderer.setRenderTarget(this.current);renderer.clear();renderer.render(this.scene,this.camera);if(ratio)ratio.value=previousRatio;
+    const ratios=new Map();
+    this.scene.traverseVisible(object=>{const ratio=object.material?.uniforms?.uPixelRatio;if(ratio&&!ratios.has(ratio)){ratios.set(ratio,ratio.value);ratio.value*=.5;}});
+    try{renderer.setRenderTarget(this.current);renderer.clear();renderer.render(this.scene,this.camera);}
+    finally{for(const [ratio,value]of ratios)ratio.value=value;}
     const uniforms=this.historyMaterial.uniforms;
     uniforms.current.value=this.current.texture;uniforms.history.value=this.historyA.texture;
     uniforms.decay.value=this.valid?feedbackDecay(this.dt,this.halfLife):0;uniforms.stepTime.value=this.dt;

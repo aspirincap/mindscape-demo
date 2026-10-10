@@ -10,3 +10,6 @@ artifacts/
 
 # Separate local project, not part of the Mindscape demo
 sharp-gui/
+
+# Python serial bridge and parser tests
+__pycache__/

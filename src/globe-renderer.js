@@ -26,7 +26,7 @@ export class GlobeRenderer {
   constructor(container, { onMarkers, onPick, onHover, onFlight, onStats, onError }) {
     this.kind = 'globe'; this.container = container;
     Object.assign(this, { onMarkers, onPick, onHover, onFlight, onStats, onError });
-    this.state = { coherence: .76, attention: .58, HR: 72 };
+    this.state = { coherence: .76, attention: .58, HR: null };
     this.active = true; this.time = 0; this.phase = 0; this.frames = 0;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.coarse = matchMedia('(pointer: coarse)').matches;
@@ -160,7 +160,7 @@ export class GlobeRenderer {
     const dt = Math.min((now - this.previous) / 1000, .05); this.previous = now;
     if (document.hidden) return;
     const chaos = 1 - this.state.coherence;
-    if (this.active && !this.reduced) { this.time += dt; this.phase += dt * this.state.HR / 60 * Math.PI * 2; }
+    if (this.active && !this.reduced) { this.time += dt; this.phase += dt * (this.state.HR ?? 0) / 60 * Math.PI * 2; }
     if (this.flight) {
       const flight = this.flight; flight.elapsed += dt;
       const t = Math.min(1, flight.elapsed / flight.duration), turn = Math.min(1, t / .65), zoom = Math.max(0, (t - .24) / .76);
@@ -179,7 +179,7 @@ export class GlobeRenderer {
     this.uniforms.uTime.value = this.time; this.uniforms.uChaos.value = chaos;
     this.atmosphere.material.uniforms.uCalm.value = this.state.coherence;
     this.atmosphere.scale.setScalar(1 + (this.reduced ? 0 : Math.sin(this.time * (1 + chaos * 3)) * chaos * .004));
-    this.dust.scale.setScalar(1 + chaos * .3 + Math.sin(this.phase) * .004);
+    this.dust.scale.setScalar(1 + chaos * .3 + (this.state.HR == null ? 0 : Math.sin(this.phase) * .004));
     this.dust.rotation.y = this.time * (.012 + chaos * .12); this.dust.rotation.z = Math.sin(this.time * .12) * chaos * .08;
     this.scene.updateMatrixWorld(true); this.camera.updateMatrixWorld(true);
     this.onMarkers(this.markers.map(marker => {

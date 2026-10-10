@@ -1,0 +1,297 @@
+{
+  "id": "grand-canyon",
+  "name": "大峡谷",
+  "version": "085c01c0469a",
+  "bbox": [
+    -112.24,
+    35.99,
+    -111.98,
+    36.22
+  ],
+  "crs": "EPSG:32612",
+  "projectedBounds": [
+    388224.9166670219,
+    3983283.2824337147,
+    411919.5947758268,
+    4009062.7934696954
+  ],
+  "origin": [
+    400072.25572142436,
+    3996173.037951705
+  ],
+  "width": 23694.67810880486,
+  "depth": 25779.511035980657,
+  "heightRange": [
+    707.40869140625,
+    2579.4150390625
+  ],
+  "heightGrid": {
+    "url": "/terrain/grand-canyon/height.f32",
+    "size": 513
+  },
+  "tileset": "/terrain/grand-canyon/tileset.json",
+  "satellite": "/terrain/grand-canyon/satellite.jpg",
+  "selection": "/terrain/grand-canyon/selection.jpg",
+  "satelliteDate": "2025-10-28",
+  "nativeElevationM": 1,
+  "terrainPointSpacingM": [
+    11.569667045314873,
+    12.58765187303743
+  ],
+  "pointCount": 4194304,
+  "tileCount": 341,
+  "downloadBytes": 83842352,
+  "pois": [
+    {
+      "id": "mather",
+      "name": "南缘 · Mather Point",
+      "lng": -112.1074,
+      "lat": 36.0617,
+      "x": 196.29497841268312,
+      "z": 4813.733383001294,
+      "distance": 5500
+    },
+    {
+      "id": "phantom",
+      "name": "峡谷腹地 · Phantom Ranch",
+      "lng": -112.0947,
+      "lat": 36.105,
+      "x": 1394.1419502301142,
+      "z": 23.73303128266707,
+      "distance": 3200
+    },
+    {
+      "id": "bright",
+      "name": "Bright Angel 周边",
+      "lng": -112.1438,
+      "lat": 36.0573,
+      "x": -3087.7249155744794,
+      "z": 5263.876372708008,
+      "distance": 5000
+    },
+    {
+      "id": "river",
+      "name": "科罗拉多河谷",
+      "lng": -112.1129,
+      "lat": 36.1069,
+      "x": -241.68471805739682,
+      "z": -205.62066054577008,
+      "distance": 4500
+    }
+  ],
+  "sources": {
+    "satellite": [
+      {
+        "id": "S2B_12SUE_20251028_0_L2A",
+        "date": "2025-10-28T18:24:21.696000Z",
+        "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/12/S/UE/2025/10/S2B_12SUE_20251028_0_L2A/TCI.tif",
+        "nativeResolutionM": 10,
+        "cloudCoverScenePercent": 0
+      },
+      {
+        "id": "S2B_12SVE_20251028_0_L2A",
+        "date": "2025-10-28T18:24:17.817000Z",
+        "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/12/S/VE/2025/10/S2B_12SVE_20251028_0_L2A/TCI.tif",
+        "nativeResolutionM": 10,
+        "cloudCoverScenePercent": 0.0001
+      },
+      {
+        "id": "S2B_12SUF_20251028_0_L2A",
+        "date": "2025-10-28T18:24:07.330000Z",
+        "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/12/S/UF/2025/10/S2B_12SUF_20251028_0_L2A/TCI.tif",
+        "nativeResolutionM": 10,
+        "cloudCoverScenePercent": 0.000212
+      },
+      {
+        "id": "S2B_12SVF_20251028_0_L2A",
+        "date": "2025-10-28T18:24:03.571000Z",
+        "url": "https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/12/S/VF/2025/10/S2B_12SVF_20251028_0_L2A/TCI.tif",
+        "nativeResolutionM": 10,
+        "cloudCoverScenePercent": 0.033334
+      }
+    ],
+    "elevation": {
+      "provider": "USGS 3DEP · Grand Canyon NP and regional DEM",
+      "nativeResolutionM": 1,
+      "fallbackResolutionM": 10,
+      "oneMeterSourceCoverage": 0.6943726539611816,
+      "verticalDatum": "NAVD88",
+      "url": "https://www.usgs.gov/3d-elevation-program",
+      "sourceRasters": [
+        {
+          "OBJECTID": 24649,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x40y399_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 31377,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x41y401_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 32492,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x40y400_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 61714,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x38y399_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 72481,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x39y401_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 74192,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x39y400_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 108550,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x39y399_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 113041,
+          "Name": "AZ_GrandCanyonNP_2019_B19",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_GrandCanyonNP_2019_B19/TIFF/USGS_1M_12_x40y401_AZ_GrandCanyonNP_2019_B19.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 21938,
+          "Name": "AZ_CentralCoconino_B22",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_CentralCoconino_B22/TIFF/USGS_1M_12_x38y399_AZ_CentralCoconino_B22.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 29478,
+          "Name": "AZ_VerdeKaibab_B1_2018",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_VerdeKaibab_B1_2018/TIFF/USGS_one_meter_x41y399_AZ_VerdeKaibab_B1_2018.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 45861,
+          "Name": "AZ_VerdeKaibab_B1_2018",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_VerdeKaibab_B1_2018/TIFF/USGS_one_meter_x38y399_AZ_VerdeKaibab_B1_2018.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 59473,
+          "Name": "AZ_VerdeKaibab_B1_2018",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_VerdeKaibab_B1_2018/TIFF/USGS_one_meter_x39y399_AZ_VerdeKaibab_B1_2018.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 59778,
+          "Name": "AZ_NorthEast_D23",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_NorthEast_D23/TIFF/USGS_1M_12_x41y401_AZ_NorthEast_D23.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 68718,
+          "Name": "AZ_NorthCentral_B23",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_NorthCentral_B23/TIFF/USGS_1M_12_x39y399_AZ_NorthCentral_B23.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 121300,
+          "Name": "AZ_NorthEast_D23",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_NorthEast_D23/TIFF/USGS_1M_12_x41y400_AZ_NorthEast_D23.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 128132,
+          "Name": "AZ_NorthCentral_B23",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_NorthCentral_B23/TIFF/USGS_1M_12_x38y400_AZ_NorthCentral_B23.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 131812,
+          "Name": "AZ_NorthCentral_B23",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/AZ_NorthCentral_B23/TIFF/USGS_1M_12_x41y399_AZ_NorthCentral_B23.tif",
+          "Resolution_X": null
+        },
+        {
+          "OBJECTID": 4415,
+          "Name": "n37w112",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/n37w112/USGS_13_n37w112.tif",
+          "Resolution_X": "9.25925926922017E-05"
+        },
+        {
+          "OBJECTID": 4578,
+          "Name": "n36w112",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/n36w112/USGS_13_n36w112.tif",
+          "Resolution_X": "9.25925926922017E-05"
+        },
+        {
+          "OBJECTID": 4750,
+          "Name": "n36w113",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/n36w113/USGS_13_n36w113.tif",
+          "Resolution_X": "9.25925926922017E-05"
+        },
+        {
+          "OBJECTID": 5498,
+          "Name": "n37w113",
+          "ProductName": "USGS_3DEP",
+          "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+          "URL": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/13/TIFF/current/n37w113/USGS_13_n37w113.tif",
+          "Resolution_X": "9.25925926922017E-05"
+        }
+      ]
+    }
+  },
+  "limitations": "高程地形为高度场，不包含倒悬或洞穴。点云按视距分层抽稀；卫星颜色为 10 米像元。",
+  "attribution": [
+    "Contains modified Copernicus Sentinel data. Processed by Element 84 / Mindscape.",
+    "USGS 3DEP · public domain. Processed by Mindscape."
+  ]
+}

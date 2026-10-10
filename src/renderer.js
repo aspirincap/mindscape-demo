@@ -1,3 +1,4 @@
+import { feedbackVisual } from './core/eeg-feedback.mjs';
 import * as THREE from 'three';
 import { GESTURE_MAX_AGE_MS } from './core/gestures.mjs';
 import { integrateGestureZoom, ZOOM_LIMITS } from './core/gesture-zoom.mjs';
@@ -19,11 +20,11 @@ export class WorldRenderer {
     this.coarse = matchMedia('(pointer: coarse)').matches;
     this.world = 'abyss';
     this.density = 1;
-    this.state = { coherence: 0.76, attention: 0.58, HR: 72 };
+    this.state = { coherence: 0.76, attention: 0.58, HR: null };
     this.orbit = { x: 0.18, y: 0, zoom: 0 };
     this.inputRevision = 0;
     this.gesture = { mode: 'idle', strength: 0, time: 0 };
-    this.viewAttention = this.state.attention; this.viewDrift = 0;
+    this.viewAttention = .58; this.viewDrift = 0;
     this.cache = new Map(); this.accentCache = new Map();
     this.transition = 0;
     this.phase = 0;
@@ -37,7 +38,7 @@ export class WorldRenderer {
     this.renderer.domElement.setAttribute('role', 'img');
     container.appendChild(this.renderer.domElement);
     this.uniforms = {
-      uTime: { value: 0 }, uCoherence: { value: 0.76 }, uAttention: { value: 0.58 },
+      uAccentGain: { value: 1 }, uTime: { value: 0 }, uCoherence: { value: 0.76 }, uAttention: { value: 0.58 },
       uPulse: { value: 0 }, uPixelRatio: { value: this.renderer.getPixelRatio() },
       uTransition: { value: 0 }, uPointScale: { value: 1.45 },
       uDispersion:{value:0},uFlow:{value:1},uOriginal:{value:0},uBrightness:{value:1.25},
@@ -159,39 +160,41 @@ export class WorldRenderer {
     if (document.hidden) { this.clearGesture();this.effects.reset();return; }
     if(elapsed>.25||this.wasActive!==this.active)this.effects.reset();this.wasActive=this.active;
     if (!this.active || this.drag || now - this.gesture.time > GESTURE_MAX_AGE_MS || elapsed>.25) this.clearGesture();
+    const visual = feedbackVisual(this.visual, this.state, false, this.reduced);
     this.orbit.zoom=integrateGestureZoom(this.orbit.zoom,this.gesture,now,elapsed,(this.camera.aspect<.8?38:29)-this.viewAttention*1.8);
-    if (this.active && !this.reduced) { this.clock += dt; this.flowTime += Math.min(elapsed,.1)*this.visual.speed; this.phase += dt * this.state.HR / 60 * Math.PI * 2; }
+    if (this.active && !this.reduced) { this.clock += dt; this.flowTime += Math.min(elapsed,.1)*visual.speed; this.phase += dt * (this.state.HR ?? 0) / 60 * Math.PI * 2; }
     this.transition = Math.max(0, this.transition - dt * 0.65);
     const raw=this.visual.mode==='original';
-    this.dispersion=smoothVisual(this.dispersion,dispersionTarget(this.state.coherence,this.visual),Math.min(elapsed,.1),this.visual.recovery);
+    this.dispersion=smoothVisual(this.dispersion,this.state.source === 'device' ? visual.dispersion : dispersionTarget(this.state.coherence,visual),Math.min(elapsed,.1),visual.recovery);
     this.uniforms.uTransition.value = raw?0:this.transition;
     this.uniforms.uTime.value = this.flowTime;
     this.uniforms.uOriginal.value=raw?1:0;this.uniforms.uDispersion.value=raw?0:this.dispersion;
-    this.uniforms.uFlow.value=raw?0:this.visual.flow;
-    this.uniforms.uPointScale.value=(this.density<.6?1.65:1.4)*(raw?1:this.visual.pointSize);
-    this.uniforms.uBrightness.value=raw?1:this.visual.brightness;
-    this.uniforms.uSaturation.value=raw?1:this.visual.saturation;
-    this.uniforms.uPalette.value=raw?0:{natural:0,aurora:1,ocean:2}[this.visual.palette];
-    this.uniforms.uSoftness.value=raw?0:this.visual.softness;
+    this.uniforms.uFlow.value=raw?0:visual.flow;
+    this.uniforms.uPointScale.value=(this.density<.6?1.65:1.4)*(raw?1:visual.pointSize);
+    this.uniforms.uBrightness.value=raw?1:visual.brightness;
+    this.uniforms.uSaturation.value=raw?1:visual.saturation;
+    this.uniforms.uPalette.value=raw?0:{natural:0,aurora:1,ocean:2}[visual.palette];
+    this.uniforms.uSoftness.value=raw?0:visual.softness;
     if(this.accents)this.accents.visible=!raw;
     if(this.trailAccents)this.trailAccents.visible=!raw;
+    this.uniforms.uAccentGain.value = visual.accentGain;
     this.uniforms.uCoherence.value = this.state.coherence;
-    this.uniforms.uAttention.value = this.state.attention;
-    this.uniforms.uPulse.value = Math.sin(this.phase);
+    this.uniforms.uAttention.value = raw ? .5 : this.state.source === 'device' ? .5 + visual.eegMix * ((this.state.attentionControl ?? .5) - .5) : this.state.attention;
+    this.uniforms.uPulse.value = this.state.HR == null || this.reduced ? 0 : Math.sin(this.phase);
     const blend = 1 - Math.exp(-dt * 8);
-    const drift = this.active && !this.reduced && !this.coarse ? Math.sin(this.clock * 0.055) * 0.025 : 0;
+    const drift = this.state.source !== 'device' && this.active && !this.reduced && !this.coarse ? Math.sin(this.clock * 0.055) * 0.025 : 0;
     if (!['rotate', 'zoom'].includes(this.gesture.mode) && !this.drag) {
       this.viewDrift += (drift - this.viewDrift) * blend;
-      this.viewAttention += (this.state.attention - this.viewAttention) * blend;
+
     }
-    const angle = this.orbit.x + this.viewDrift;
+    const angle = this.orbit.x + (this.state.source === 'device' ? 0 : this.viewDrift);
     const distance = (this.camera.aspect < .8 ? 38 : 29) + this.orbit.zoom - this.viewAttention * 1.8;
     this.camera.position.set(Math.sin(angle) * distance, (this.world === 'colosseum' || this.world === 'grand-canyon' ? 13 : 8) + this.orbit.y, Math.cos(angle) * distance - 4);
     this.camera.lookAt(0, this.world === 'abyss' ? 3 : this.world === 'eiffel' ? 5.5 : 3.6, -5);
     this.uniforms.uFocus.value=this.camera.position.distanceTo(new THREE.Vector3(0,4,-5));
     const moving=!!this.drag||this.camera.position.distanceTo(this.previousCamera)/Math.max(dt,.001)>1.2;
     this.previousCamera.copy(this.camera.position);
-    this.effects.render(elapsed,this.visual,{moving,reduced:this.reduced,active:this.active,coarse:this.coarse});
+    this.effects.render(elapsed,visual,{moving,reduced:this.reduced,active:this.active,coarse:this.coarse});
     this.frames++;
     if (now - this.lastStats > 1000) {
       this.onStats({ fps: Math.round(this.frames * 1000 / (now - this.lastStats)), points: this.count || 0 });
