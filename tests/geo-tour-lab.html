@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>空中导览验收</title>
+<style>canvas{display:block}body{overflow:hidden;margin:0;background:#000;color:#d9eee6;font:12px system-ui}#scene{width:100vw;height:100vh}aside{position:absolute;top:12px;left:12px;max-width:390px;background:#03100fe0;padding:12px;border-radius:12px}button,select{background:#163730;color:inherit;border:1px solid #396055;border-radius:5px;padding:7px;margin:3px}pre{font-size:10px;max-height:32vh;overflow:auto}body.clean pre,body.clean .checks{display:none}</style>
+<div id="scene"></div><aside><div><select aria-label="测试地点"><option value="fuji">富士山</option><option value="grand-canyon">大峡谷</option></select><button id="pause">暂停</button><button id="resume">继续</button><button id="restart">重新起飞</button><button id="clean">简洁画面</button></div><div class="checks"><button data-at="0">起点</button><button data-at=".25">路程25%</button><button data-at=".5">路程50%</button><button data-at=".75">路程75%</button><button id="overview">全景对照</button><button id="edge">切换边缘</button><button id="raw">切换原始</button><button id="gesture">模拟单手缩放</button><button id="device">脑电锁定对照</button><button id="suspend">暂停渲染</button></div><pre id="stats"></pre></aside>
+<script type="module">
+import { GeoRenderer } from '/src/geo-renderer.js';
+import { clearGeoVisual } from '/src/core/geo-tour.mjs';
+let engine,errors=[],ready=false,lastPose=null,maxStep=0,previousStatus='',transitionStep=null;
+const stats=document.querySelector('#stats'),select=document.querySelector('select');
+const snapshot=s=>{
+ const p=engine.camera.position.toArray(),step=lastPose?Math.hypot(...p.map((v,i)=>v-lastPose[i])):0;
+ maxStep=Math.max(maxStep,step);lastPose=p;
+ const current=engine.tour?.status;if(current==='manual'&&previousStatus!=='manual')transitionStep=step;previousStatus=current;
+ stats.textContent=JSON.stringify({ready,world:engine.world,...s.geo,camera:p,bank:engine.bank,clearance:p[1]-engine.elevation(p[0],p[2]),visual:engine.displayVisual,uniforms:{palette:engine.uniforms.palette.value,edge:engine.uniforms.edgeFade.value,geoLocked:engine.uniforms.geoLocked.value},glError:engine.renderer.getContext().getError(),transitionStep,maxStep,errors},null,2);
+};
+async function load(id){ready=false;engine?.dispose();errors=[];lastPose=null;maxStep=0;engine=new GeoRenderer(document.querySelector('#scene'),snapshot,e=>errors.push(e));await engine.loadWorld(id);ready=true;}
+select.onchange=()=>load(select.value);
+document.querySelector('#pause').onclick=()=>engine.pauseTour();
+document.querySelector('#resume').onclick=()=>engine.resumeTour();
+document.querySelector('#restart').onclick=()=>engine.resumeTour(true);
+document.querySelector('#clean').onclick=()=>document.body.classList.toggle('clean');
+for(const b of document.querySelectorAll('[data-at]'))b.onclick=()=>{engine.join=null;engine.tour.time=engine.tour.route.duration*Number(b.dataset.at);engine.tour.status='paused';engine.tour.autoVisual=true;engine.setVisual(clearGeoVisual(),{manual:false});engine.effects.reset();lastPose=null;maxStep=0;};
+document.querySelector('#overview').onclick=()=>{engine.resetCamera();lastPose=null;maxStep=0;};
+document.querySelector('#edge').onclick=()=>engine.setEdgeFade(!engine.edgeFade);
+document.querySelector('#raw').onclick=()=>engine.setVisual({...clearGeoVisual(),mode:engine.visual.mode==='original'?'cinematic':'original'});
+document.querySelector('#gesture').onclick=()=>engine.applyGesture({mode:'zoom',zoomRate:.6});
+document.querySelector('#device').onclick=()=>{engine.state={source:'device',feedbackMix:1,relaxationControl:.8,attentionControl:.7,HR:null};};
+document.querySelector('#suspend').onclick=()=>{engine.active=!engine.active;};
+await load(select.value);
+</script></html>

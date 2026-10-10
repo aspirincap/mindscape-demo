@@ -4,5 +4,5 @@ window.errors=[];
 const world=new URLSearchParams(location.search).get('world')||'fuji';
 const {WorldRenderer}=await import(GEO_WORLDS.has(world)?'/src/geo-renderer.js':'/src/renderer.js');
 window.engine=new WorldRenderer(document.querySelector('#scene'),s=>window.stats=s,e=>window.errors.push(e));
-await engine.loadWorld(world);window.ready=true;
+await engine.loadWorld(world);if(engine.geographic){engine.resetCamera();engine.setTourVisual(false);}window.ready=true;
 </script></html>

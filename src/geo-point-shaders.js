@@ -3,10 +3,11 @@ export const geoPointVertex = `
 attribute vec3 color;
 uniform float spacing,viewportHeight,uPixelRatio,pointScale,time,dispersion,flow;
 uniform float brightness,saturation,palette,softness,focus,original,accent,motionScale;
-uniform float geoLocked,accentFlow,accentGain;
+uniform float geoLocked,accentFlow,accentGain,edgeFade;
 uniform vec2 heightRange,extent;
 varying vec3 vColor;
 varying float vAlpha;
+varying float vEdge;
 float hash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 void main(){
  float seed=hash(position*.013);
@@ -40,10 +41,10 @@ void main(){
   vec3 ice=mix(vec3(.035,.15,.24),vec3(.34,.68,.73),h);
   vec3 violet=mix(vec3(.035,.07,.22),vec3(.39,.23,.62),h);
   float ribbon=pow(.5+.5*sin(q.x*.7+q.z*.55-t*.35),6.);
-  if(palette>.5){
-   c=palette>1.5?mix(violet,vec3(.10,.43,.68),ribbon*.45):mix(ice,vec3(.78,.38,.14),ribbon*.18);
-   c*=.75+min(luminance,.6)*.6;
-  }else{c=mix(native,ice,.17);c=max(c,ice*.22);}
+  vec3 natural=max(mix(native,ice,.17),ice*.22);
+  vec3 aurora=mix(ice,vec3(.78,.38,.14),ribbon*.18)*(.75+min(luminance,.6)*.6);
+  vec3 ocean=mix(violet,vec3(.10,.43,.68),ribbon*.45)*(.75+min(luminance,.6)*.6);
+  c=mix(mix(natural,aurora,clamp(palette,0.,1.)),ocean,clamp(palette-1.,0.,1.));
   float l=dot(c,vec3(.2126,.7152,.0722));c=max(vec3(0.),mix(vec3(l),c,saturation));
   float sparkle=.7+.3*sin(t*.8+seed*30.);
   c=mix(c,c*3.5+mix(vec3(.12,.42,.5),vec3(.65,.3,.12),step(.82,seed)),accent);
@@ -51,17 +52,23 @@ void main(){
  }
  float depth=exp(-max(0.,-mv.z-focus)*softness/max(focus,3000.)*.6);
  vColor=c*brightness*mix(depth,1.,original);
- float edge=min(.5-abs(position.x)/extent.x,.5-abs(position.z)/extent.y);
- float vignette=smoothstep(0.,.075,edge);
- vAlpha=mix(.9,.6,accent)/(blur*blur)*mix(vignette,1.,original);
+ // A wide rounded boundary, anchored in world coordinates so adjacent LOD tiles agree.
+ // Attenuate energy as well as alpha: overlapping points cannot rebuild an opaque rectangle.
+ vec2 border=abs((modelMatrix*vec4(position,1.)).xz)/(extent*.5);
+ vec2 fourth=border*border;fourth*=fourth;
+ float radius=pow(fourth.x+fourth.y,.25);
+ vEdge=mix(1.,1.-smoothstep(.70,.99,radius),edgeFade);
+ vColor*=vEdge;
+ vAlpha=mix(.9,.6,accent)/(blur*blur);
 }`;
 export const geoPointFragment = `
 uniform float original;
 varying vec3 vColor;
 varying float vAlpha;
+varying float vEdge;
 void main(){
  vec2 q=gl_PointCoord*2.-1.;float r=dot(q,q);if(r>1.)discard;
- float a=original>.5?1.:exp(-r*3.3)*vAlpha*(1.-smoothstep(.55,1.,r));
+ float a=(original>.5?1.:exp(-r*3.3)*vAlpha*(1.-smoothstep(.55,1.,r)))*vEdge;
  if(a<.015)discard;
  gl_FragColor=vec4(vColor,a);
  #include <tonemapping_fragment>

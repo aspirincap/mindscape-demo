@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>真实地理场景验收</title><style>body{margin:0;background:#030c12;color:#ddd;font:14px system-ui}#scene{width:100vw;height:100vh}#stats{position:absolute;top:12px;left:12px;pointer-events:none}</style><div id="scene"></div><pre id="stats"></pre><script type="module">
 import{GeoRenderer}from'/src/geo-renderer.js';
 window.errors=[];window.engine=new GeoRenderer(document.querySelector('#scene'),s=>{window.stats=s;document.querySelector('#stats').textContent=JSON.stringify(s,null,2);},e=>window.errors.push(e));
-window.load=async id=>{window.engine?.dispose();window.engine=new GeoRenderer(document.querySelector('#scene'),s=>{window.stats=s;document.querySelector('#stats').textContent=JSON.stringify(s,null,2);},e=>window.errors.push(e));await engine.loadWorld(id);};
+window.load=async id=>{window.engine?.dispose();window.engine=new GeoRenderer(document.querySelector('#scene'),s=>{window.stats=s;document.querySelector('#stats').textContent=JSON.stringify(s,null,2);},e=>window.errors.push(e));await engine.loadWorld(id);engine.resetCamera();engine.setTourVisual(false);};
 await window.load(new URLSearchParams(location.search).get('world')||'fuji');
 </script></html>

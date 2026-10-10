@@ -287,8 +287,8 @@ function App() {
           <button className="icon-button glass" aria-label="重置视角" title="重置视角" onClick={() => engine.current?.resetCamera()}><ArrowCounterClockwise size={18}/></button>
           <button className="icon-button glass" aria-label={immersive ? '退出沉浸模式' : '进入沉浸模式'} title="沉浸模式 (F)" onClick={() => setImmersive(v => !v)}>{immersive ? <ArrowsIn size={18}/> : <ArrowsOut size={18}/>}</button>
         </div>
-        <GeoControls engine={engine} ready={loaded} world={world} stats={stats.geo}/>
-        <VisualControls engine={engine} ready={loaded} world={world}/>
+        <GeoControls engine={engine} ready={loaded} world={world} stats={stats.geo} paused={paused}/>
+        <VisualControls key={`visual-${world}`} engine={engine} ready={loaded} world={world} tour={stats.geo?.tour}/>
         <GestureControls engine={engine} paused={paused} world={world} ready={loaded}/>
         {!loaded && !error && <div className="scene-message"><CircleNotch className="spin" size={27}/><span>正在构建{currentWorld.name}…</span><small>让每一个微粒找到自己的位置</small></div>}
         {error && <div className="scene-message error" role="alert"><span>{error}</span><button className="primary" onClick={() => location.reload()}>重新加载</button></div>}
@@ -324,7 +324,7 @@ function App() {
       </div></dialog>
     </main>
 
-    {stage !== 'connect' && <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.08.0</span></div></footer>}
+    {stage !== 'connect' && <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.09.0</span></div></footer>}
     <div className="sr-only" role="status" aria-live="polite">{stage === 'transform' ? `${currentWorld.name}。${status}。` : ''}</div>
     {toast && <div className="toast" role="status"><Check size={15}/>{toast}</div>}
 
