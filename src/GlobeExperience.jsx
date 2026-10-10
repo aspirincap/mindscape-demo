@@ -87,7 +87,7 @@ export const GlobeExperience = memo(function GlobeExperience({ cloud, engine, st
           <div className="intent-suggestions"><button type="button" onClick={() => setIntent('想去伊瓜苏瀑布，释放一下疲惫。')}>想听水声</button><button type="button" onClick={() => setIntent('想去富士山看雪，让自己慢下来。')}>想慢下来</button><button type="button" onClick={() => setIntent('想去埃菲尔铁塔看星光。')}>想看星光</button></div>
           <button className="primary" disabled={routing || !intent.trim()}>{routing ? <><CircleNotch className="spin"/>正在寻找…</> : <>寻找我的目的地 <ArrowRight size={16}/></>}</button>
           <button className="text-button atlas-skip" type="button" onClick={() => onStage('explore')}>自己探索</button>
-          <small className="routing-disclosure">{cloud ? 'AI 推荐会发送心意文字与粗略放松状态' : '当前使用本地规则推荐'}</small>
+          <small className="routing-disclosure">{cloud ? 'AI 推荐仅发送你主动输入的文字' : '当前使用本地规则推荐'}</small>
         </form>}
         {stage === 'explore' && (selected ? <div className="destination-detail">
           <span className="destination-english">{selected.english}</span><div className="destination-tags">{selected.theme.join(' / ')}</div>

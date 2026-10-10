@@ -35,6 +35,8 @@ import { GestureControls } from './GestureControls';
 import { VisualControls } from './VisualControls';
 import { GeoControls } from './GeoControls';
 import { GEO_WORLDS } from './core/geo-navigation.mjs';
+import { RiverineHero } from './riverine/RiverineHero';
+import './riverine/theme.css';
 
 
 const WORLDS = Object.fromEntries(LOCATIONS.map((l,i) => [l.worldId, { number: String(i+1).padStart(2,'0'), name:l.name, en:l.english, title:[l.name,l.title], subtitle:l.description, intention:l.theme.join(' · '), icon:GlobeHemisphereEast }]));
@@ -262,15 +264,15 @@ function App() {
   const stageNames = ['连接', '心意', '探索', '抵达', '共鸣'];
   const stageIndex = stages.indexOf(stage);
   return <div className={`app world-${world} view-${stage} ${immersive ? 'immersive' : ''}`}>
-    <header className="topbar flex items-center justify-between">
+    {stage !== 'connect' && <header className="topbar flex items-center justify-between">
       <a className="brand" href="/" aria-label="Mindscape 意境首页"><span className="brand-orbit"><i/><i/><i/></span><span>mindscape<span className="brand-divider"/>意境</span></a>
       <nav className="journey-nav" aria-label="体验阶段">{stages.map((step, index) => <button key={step} className={stage === step ? 'active' : index < stageIndex ? 'complete' : ''} aria-current={stage === step ? 'step' : undefined} disabled={index >= stageIndex || step === 'enter' || stage === 'enter'} onClick={() => navigateStage(step)}><span>{String(index + 1).padStart(2, '0')}</span>{stageNames[index]}</button>)}</nav>
       <div className="top-right"><button className="text-button" onClick={() => setControls(true)}><SlidersHorizontal size={16}/>调节共鸣</button><span className="local-status"><i/> {backend === 'cloudflare' ? '云端体验' : '本地体验'} <span className="local-label">{backend === 'cloudflare' ? 'CLOUDFLARE' : 'LOCAL DEMO'}</span></span><button className="icon-button" aria-label="使用说明" onClick={() => setHelp(true)}><Question size={19}/></button></div>
-    </header>
+    </header>}
 
     <main>
       <section className="experience" aria-label="沉浸世界">
-        {stage !== 'transform' ? <GlobeExperience cloud={backend === 'cloudflare'} engine={engine} stage={stage} selectedId={selectedId} recommendations={recommendations} live={live} source={source} intent={intent} setIntent={setIntent} routing={routing} listening={listening} voice={voice} onRoute={route} onStage={navigateStage} onSelect={selectLocation} onEnter={enterLocation} onCancel={cancelEntry} onStats={statsHandler} stats={stats} density={quality}/> : <>
+        {stage === 'connect' ? <RiverineHero onStart={() => navigateStage('speak')} onExplore={() => navigateStage('explore')} onControls={() => setControls(true)} onHelp={() => setHelp(true)}/> : stage !== 'transform' ? <GlobeExperience cloud={backend === 'cloudflare'} engine={engine} stage={stage} selectedId={selectedId} recommendations={recommendations} live={live} source={source} intent={intent} setIntent={setIntent} routing={routing} listening={listening} voice={voice} onRoute={route} onStage={navigateStage} onSelect={selectLocation} onEnter={enterLocation} onCancel={cancelEntry} onStats={statsHandler} stats={stats} density={quality}/> : <>
         <Scene engine={engine} world={world} onStats={statsHandler} onError={errorHandler} onReady={readyHandler} density={quality}/>
         <div className="scene-vignette"/>
         <div className="world-intro" key={world}>
@@ -322,7 +324,7 @@ function App() {
       </div></dialog>
     </main>
 
-    <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.07.0</span></div></footer>
+    {stage !== 'connect' && <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.08.0</span></div></footer>}
     <div className="sr-only" role="status" aria-live="polite">{stage === 'transform' ? `${currentWorld.name}。${status}。` : ''}</div>
     {toast && <div className="toast" role="status"><Check size={15}/>{toast}</div>}
 

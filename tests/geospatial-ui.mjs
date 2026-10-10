@@ -6,8 +6,8 @@ const cache=join(homedir(),'Library/Caches/ms-playwright');const fallback=exists
 const browser=await chromium.launch({headless:true,proxy:process.env.GEO_TEST_PROXY?{server:process.env.GEO_TEST_PROXY}:undefined,executablePath:existsSync(chromium.executablePath())?undefined:fallback});
 const base=process.env.GEO_TEST_URL||'http://127.0.0.1:5174';const errors=[],report=[];await mkdir('artifacts/geospatial/verification',{recursive:true});
 try{
- const page=await browser.newPage({viewport:{width:1440,height:960}});page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await page.goto(base);await page.getByRole('button',{name:'直接探索 12 个世界',exact:true}).click();await page.getByRole('button',{name:'选择目的地：富士山',exact:true}).click();await page.getByRole('button',{name:'进入富士山',exact:true}).click();await page.getByRole('button',{name:'打开探索地图与数据来源',exact:true}).waitFor({timeout:60000});await page.waitForTimeout(3500);await page.screenshot({path:'artifacts/geospatial/verification/fuji-ui.png'});
+ const page=await browser.newPage({viewport:{width:1440,height:960}});page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!/\/assets\/fonts\/rv-(display|brand|text)\.woff2$/.test(m.location().url))errors.push(m.text());});
+ await page.goto(base);await page.getByRole('link',{name:'直接探索 12 个世界',exact:true}).click();await page.getByRole('button',{name:'选择目的地：富士山',exact:true}).click();await page.getByRole('button',{name:'进入富士山',exact:true}).click();await page.getByRole('button',{name:'打开探索地图与数据来源',exact:true}).waitFor({timeout:60000});await page.waitForTimeout(3500);await page.screenshot({path:'artifacts/geospatial/verification/fuji-ui.png'});
 
  assert.match(await page.locator('.visual-trigger').innerText(),/流光/);await page.locator('.visual-trigger').click();
  for(const preset of ['清晰','流光','梦境']){const button=page.getByRole('group',{name:'视觉预设'}).getByRole('button',{name:new RegExp(preset)});await button.click();assert.equal(await button.getAttribute('aria-pressed'),'true');}

@@ -1,6 +1,6 @@
 # Mindscape 交接记录
 
-更新：2026-10-10（Asia/Shanghai）。本次按 EEG-INTEGRATION-PLAN.md 实施脑电接入；新增状态与验证见本节及第 11 节。第 9 节明确标注的 V.06.1 记录仅作历史参考。
+更新：2026-10-11（Asia/Shanghai）。当前 V.08.0 按用户所附 Riverine 提示词及新 DESIGN.md 重构前端，保留 EEG v2 与场景功能，见第 12 节。第 9 / 11 节分别保留 V.06.1 / V.07.0 的历史验证。
 
 ## 1. 接手先看
 
@@ -9,11 +9,11 @@
 | 本地目录 | `/Users/mvgz0331/Documents/ChatGPT/td-dive` |
 | 线上 Demo | https://mindscape-demo.aspirincap.workers.dev/ |
 | 公开仓库 | https://github.com/aspirincap/mindscape-demo |
-| UI 版本 | `V.07.0`；`package.json` 仍为 `1.0.0` |
-| 最近成功部署的 Worker 版本 | `80e83cf3-9fc6-4c20-8eee-8096a545ecc5` |
-| 本轮代码提交 | `1c8e2e23913cbec207e1a183facc389fc909f1b0`；交接文档为其后独立提交 |
-| 本轮范围 | 地理场景与 EEG v2 接入；交接记录独立提交 |
-| 提交状态 | 本次提交覆盖真实地理场景、视觉增强、原 EEG 监视器及 EEG v2 集成；最终代码提交和部署记录见第 11 节。 |
+| UI 版本 | `V.08.0`；`package.json` 仍为 `1.0.0` |
+| 最近成功部署的 Worker 版本 | `8f7069f7-b307-45c7-b34a-5b9714a5ae70` |
+| 本轮代码提交 | 使用 `git log -1 -- src/riverine/` 查看，避免文档自引用提交哈希 |
+| 本轮范围 | 按附件提示词重构 Mindscape 前端，保留原有场景、脑电与手势功能 |
+| 提交状态 | 本轮源码、设计规范与交接记录一起提交至 `main`；V.08 验证与发布见第 12 节。EEG v2 历史代码提交为 `1c8e2e2`。 |
 
 当前有 12 个世界：富士山、大峡谷使用真实地理数据，其余 10 个继续使用原有程序化主题点云。两处真实场景已加入连续粒子流动、柔和光晕、稀疏亮点余辉，并接入共用的视觉调节面板。
 
@@ -28,7 +28,7 @@
 - 上述视觉增强已经实现并部署。默认是 **流光 + 完整光影**，不是原始点云。
 - 加工发生在渲染层，保留原始坐标与 RGB，用户可随时回到原始档对照。
 
-历史参考文件：`/Users/mvgz0331/Downloads/DESIGN (3).md`、`/Users/mvgz0331/Desktop/未命名.mov`。录像是用户私人测试素材，不应提交或上传。当前界面已有黑底、紫色设计语言；真实场景的加工色彩以蓝、青、紫为主。
+历史参考文件：`/Users/mvgz0331/Downloads/DESIGN (3).md`、`/Users/mvgz0331/Desktop/未命名.mov`。录像是用户私人测试素材，不应提交或上传。该设计为历史参考；V.08 改为 Riverine 的墨蓝 / 青绿 / 奶白界面。真实场景的加工色彩继续由原视觉预设决定。
 
 ## 3. 系统路径与代码入口
 
@@ -306,3 +306,37 @@ TEST_HTTPS_PROXY=http://127.0.0.1:7897 node tests/geospatial-live.mjs
 代码提交：`1c8e2e23913cbec207e1a183facc389fc909f1b0`（`Integrate EEG v2 feedback with real terrain scenes`）。本交接文档以紧随其后的独立提交保存；两次提交推送至 `origin/main`。精确文档提交号用 `git log -1 -- HANDOFF.md` 查看，避免文档自引用提交哈希。
 
 相关文档：[EEG-INTEGRATION-PLAN.md](EEG-INTEGRATION-PLAN.md)、[EEG-MONITOR.md](EEG-MONITOR.md)、[GEOSPATIAL.md](GEOSPATIAL.md)、[CLOUDFLARE.md](CLOUDFLARE.md)。早期 `artifacts/geospatial-research/PLAN.md` 仅为调研历史。
+
+
+## 12. Riverine 前端重构（V.08.0）
+
+设计依据为 2026-10-11 用户粘贴的完整提示词；用户已明确选择“严格采用附件布局、视频和动效，保留现有 Mindscape 功能与产品文案”。[DESIGN.md](DESIGN.md) 完整保留原文，并记录 React 适配边界、字体缺失和原稿未规定坐标的落地数值。不要再按 MotionSites 缩略图自由推测设计，也不要恢复原紫色按钮。
+
+### 实现与边界
+
+- 新增 `src/riverine/`：`RiverineHero.jsx`、`hero.css`、`design.mjs`、`theme.css`。Hero 100dvh，指定 CloudFront 视频仅远程播放，未下载到仓库；静音 / 自动播放 / 循环 / playsInline，三层遮罩、基准标尺、SVG 路径与断点按原提示词。
+- 标题与品牌换为 Mindscape 中文；原 href 保留并接到实际旅程、地球、说明、设备面板。后续地球、脑电、视觉、地图和手势面板统一使用墨蓝、青绿与奶白。
+- `--u` 采用 1280×960 比例；手机、短横屏、650–1100 平板和竖屏有独立处理，含 safe-area。手机菜单打开聚焦首项，Escape 关闭返焦，外部点击与链接选择关闭；短横屏小于 650px 时为双列。
+- 入场用 WAAPI，等待字体与视频 loadeddata，按原时间轴执行；3.5 秒失败兜底直接显示，之后不补播。减少动态效果偏好直接显示，并暂停视频。卸载时移除监听、定时器、动画；完成时无残留内联样式。
+- 附件未提供 `rv-display.woff2`、`rv-brand.woff2`、`rv-text.woff2`。保留原 @font-face、font-display:block 和回退栈，未替换字体；因此构建提示未解析、浏览器可能出现三份可选字体的 404，字体走指定回退。获得文件后放到 `public/assets/fonts/` 即可。
+- 首页声音按钮按原文只切换 aria-pressed 与波纹透明度，不新增音频文件。最终场景原有 Web Audio 音量和开关独立保留。
+- 首页不创建 WebGL 地球；进入旅程才加载地球，离开首页即卸载河流视频。脑电协议、算法、手势识别、点云资产及 Worker 逻辑均未改动。
+- 修正文案：心意页面明确 AI 只接收主动输入的文字，去除早期“粗略放松状态”描述。
+
+### 本轮验证
+
+- `npm test`：57 项通过；`npm run build:cloudflare` 构建通过。除已声明的可选字体与既有 Three 大分包提示，无构建失败；`git diff --check` 及相关 JS 语法检查通过。
+- 使用内置浏览器验证 1280×960 参考尺寸：stage=1280×960、nav=442×47；视频 readyState=4、静音且播放；入场结束无等待 class、无内联 style 残留。
+- 检查 375×812、390×844、650×960、768×1024、844×390、600×360：无横向溢出，标题、操作、滚动提示未越界。650 / 768 平板使用桌面导航，600 短横屏菜单为双列。
+- 菜单打开首项聚焦、Escape 返焦、外部关闭、指南选择关闭及关闭说明后返焦正常；声音状态 true→false 时波纹 opacity=.25。
+- 首页→心意→推荐→富士山流程通过；原始档禁用效果滑块、恢复默认正常，手势入口保留。设备面板缺失读数为 —、心率未接入，390×844 下对话框未越界；最终场景不存在首页视频元素。
+- 本轮未重新开启串口或摄像头。没有把已有 10 分钟 EEG 实测或手势单测称为本轮硬件验收。
+- 本地截图在 `artifacts/riverine/desktop.jpg`、`mobile.jpg`、`mobile-eeg.jpg`，仅作验收证据，不提交私人数据。5186 本轮预览已关闭，未改动 5174 或 8765 进程。
+
+### 发布
+
+2026-10-11 已部署 V.08.0，Worker ID `8f7069f7-b307-45c7-b34a-5b9714a5ae70`，线上地址不变。发布资产来自本轮 `npm run build:cloudflare` 生成的 `dist/`；Worker、R2、Gateway 配置未改动。
+
+线上内置浏览器复核：指定视频 readyState=4、静音播放，导航 442×47，无横向溢出；入场结束无等待 class 与内联 style。点击「直接探索 12 个世界」可到达完整目的地目录，页脚为 V.08.0。线上首页截图保存在 `artifacts/riverine/online.jpg`。本轮对浏览器测试脚本做了入口选择器适配，但没有重跑两份完整浏览器脚本；实际 UI 验证由内置浏览器完成，范围见上文。
+
+本轮源码、`DESIGN.md`、README 和本交接记录一起提交并推送至 `origin/main`。精确提交用 `git log -1 -- src/riverine/` 查看。

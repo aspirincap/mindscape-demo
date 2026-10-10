@@ -17,7 +17,7 @@ const pause = ms => new Promise(r => setTimeout(r, ms));
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
   const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
-  await page.goto(base); await page.getByRole('button', { name: '调节共鸣', exact: true }).click(); await page.getByRole('button', { name: '设备接入', exact: true }).click();
+  await page.goto(base); await page.getByRole('link', { name: '调节共鸣', exact: true }).click(); await page.getByRole('button', { name: '设备接入', exact: true }).click();
   await page.getByText('未接入', { exact: true }).waitFor(); assert.equal(await page.getByTestId('eeg-attention').innerText(), '—');
   // Let the page establish its cookie before the test obtains the same session.
   // Otherwise two concurrent bootstrap requests create different cloud sessions.
@@ -38,7 +38,7 @@ try {
   await page.getByRole('button', { name: '模拟器', exact: true }).click(); await page.getByRole('button', { name: '设备接入', exact: true }).click(); assert.equal(await page.getByTestId('eeg-attention').innerText(), '—');
   dataTimer = setInterval(() => send(), 1050); await pause(4200); await page.getByRole('button', { name: '开始脑电氛围', exact: true }).click();
   await page.getByRole('button', { name: '关闭共鸣面板', exact: true }).click();
-  await page.getByRole('button', { name: '直接探索 12 个世界', exact: true }).click();
+  await page.getByRole('link', { name: '直接探索 12 个世界', exact: true }).click();
   for (const name of ['富士山', '大峡谷', '帕劳']) {
     await page.getByRole('button', { name: `选择目的地：${name}`, exact: true }).click(); await page.getByRole('button', { name: `进入${name}`, exact: true }).click();
     await page.getByRole('button', { name: /开启手势/ }).waitFor({ timeout: 60000 });
