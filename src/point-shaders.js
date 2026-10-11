@@ -34,6 +34,8 @@ void main() {
   vec3 c = color;
   vec3 cold = mix(vec3(.045,.48,.9),vec3(.48,.12,.85),.5+.5*sin(position.y*.16+seed));
   float paletteWeight = .3*clamp(uPalette,0.,1.) + .42*clamp(uPalette-1.,0.,1.);
+  // Recolour the existing light; keep dark image regions dark and readable.
+  cold *= dot(c,vec3(.2126,.7152,.0722)) / max(.001,dot(cold,vec3(.2126,.7152,.0722)));
   c=mix(c,cold,paletteWeight);
   float luminance = dot(c,vec3(.2126,.7152,.0722));
   c = mix(vec3(luminance),c,uSaturation);

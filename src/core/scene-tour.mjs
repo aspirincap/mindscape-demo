@@ -37,8 +37,10 @@ export function sceneTourVisual(progress) {
   const visual = tourVisual(progress), envelope = Math.sin(Math.PI*clamp(progress,0,1))**2;
   // Quiet breathing of the surface, rather than scattering an image reconstruction.
   visual.dispersion = .075 * envelope;
-  visual.softness = Math.min(.2,visual.softness);
-  visual.bloom = Math.min(.6,visual.bloom);
-  visual.trail = Math.min(.55,visual.trail);
+  visual.pointSize = Math.min(1.02,visual.pointSize);
+  visual.brightness = Math.min(1.17,visual.brightness);
+  visual.softness = Math.min(.13,visual.softness);
+  visual.bloom = Math.min(.45,visual.bloom);
+  visual.trail = Math.min(.4,visual.trail);
   return visual;
 }

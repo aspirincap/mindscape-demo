@@ -10,7 +10,7 @@
 | 线上 Demo | https://mindscape-demo.aspirincap.workers.dev/ |
 | 公开仓库 | https://github.com/aspirincap/mindscape-demo |
 | UI 版本 | `V.10.0`；`package.json` 仍为 `1.0.0` |
-| 最近成功部署的 Worker 版本 | `4c3a5a6d-7172-41d6-944d-6ebe0865c1f1` |
+| 最近成功部署的 Worker 版本 | `fbdab2e0-7397-4bdb-ac34-782941ed8825` |
 | 本轮代码提交 | 使用 `git log -1 -- src/core/scene-tour.mjs` 查看，避免文档自引用提交哈希 |
 | 本轮范围 | 22 个场景目录、20 个 R2 模型、全球灵感地点、48–72 秒微光导览 |
 | 提交状态 | 本轮源码、设计规范与交接记录一起提交至 `main`；V.10 验证与发布见第 15 节。EEG v2 历史代码提交为 `1c8e2e2`。 |
@@ -405,9 +405,10 @@ TEST_HTTPS_PROXY=http://127.0.0.1:7897 node tests/geospatial-live.mjs
 - npm run test:eeg:integration：通过 Node WS 实际链路、隔离、独立字段时效、断线和停止回归，无需串口。
 - npm run test:cloudflare：本地 Worker 会话 / EEG v2 / 推荐与限流回归通过。
 - 20 / 20 正式渲染器 GPU 验收通过，原点数一致，清晰 / 中段 / 镜头边界有有效像素，图形错误 0；结果在 artifacts/scene-verification/gpu.json。
-- 正式构建成功；线上 Worker 版本 `4c3a5a6d-7172-41d6-944d-6ebe0865c1f1`。原 Gateway / 模型与 Durable Object 绑定保持不变。
+- 正式构建成功；线上 Worker 版本 `fbdab2e0-7397-4bdb-ac34-782941ed8825`。原 Gateway / 模型与 Durable Object 绑定保持不变。
 - 线上 smoke 全部通过：20 个模型 HEAD 大小 / ETag、一份完整二进制 SHA-256、两个地形 manifest、22 个 API 地点、旧资产 404、手势资源与 WSS / EEG 会话隔离；真实 AI Gateway 将雨林推荐为 scene-02，将特罗姆瑟推荐为 scene-19。
 - 手机 390×844 iframe 实际操作通过：进入极光、暂停、手动光影、恢复自动光影、重新导览、场景说明。截图 artifacts/scene-verification/mobile.png。
 - 本轮未打开串口或真人摄像头；没有重新进行完整 EEG 设备 UI / 真人手势录屏验收。原协议、手势核心测试和中继链路回归已通过。
 - 新素材上的视觉管线回归：23 项检查通过（三档有可测画面差异、聚散展开 / 恢复、余辉清除、减少动态偏好、普通颜色缓冲降级、资源释放）。为双层平滑留出 15 秒模拟收敛时间；日志 artifacts/scene-verification/visual.txt。
 - 正式站点实际进入怀托摩并加载微光导览，页面错误日志为空；截图 artifacts/scene-verification/live-waitomo.png。开发版手机视口另外确认富士山 5 分钟、大峡谷 4 分钟原导览正常出现，截图 geo-retained.png。
+- 最终视觉复核又收敛了导览中段：调色按源像素亮度归一，保留洞穴 / 树林的暗部；自动导览粒子尺寸 ≤1.02、亮度 ≤1.17、光晕 ≤0.45、柔化 ≤0.13、余辉 ≤0.4。手动视觉参数范围保留。此改动后再次通过 66 单测、20/20 GPU 和 23 项视觉管线回归。全部场景清晰 / 中段对照图为 artifacts/scene-verification/clear-and-tour.png。

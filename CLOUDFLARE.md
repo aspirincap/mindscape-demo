@@ -135,6 +135,6 @@ V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检�
 
 ### 2026-10-11 V.10：22 场景目录与 R2 精选模型
 
-Worker 版本 `4c3a5a6d-7172-41d6-944d-6ebe0865c1f1`。保留富士山 / 大峡谷，加入 20 个用户精选图像重建点云与 48–72 秒微光导览。新 `/scene-data/*` 路由复用 TERRAIN 绑定和 mindscape-terrain 桶，R2 对象采用内容哈希不可变命名，按清单限制路径和校验大小。旧程序化世界文件不再部署。导入、上传及地点清单见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。
+Worker 版本 `fbdab2e0-7397-4bdb-ac34-782941ed8825`。保留富士山 / 大峡谷，加入 20 个用户精选图像重建点云与 48–72 秒微光导览。新 `/scene-data/*` 路由复用 TERRAIN 绑定和 mindscape-terrain 桶，R2 对象采用内容哈希不可变命名，按清单限制路径和校验大小。旧程序化世界文件不再部署。导入、上传及地点清单见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。
 
 线上验证：22 地点契约、20 个模型大小 / ETag、完整二进制校验、旧资产 404、单手模型 / WASM、EEG v2 会话隔离和心跳时效均通过。GLM-5.3-Flash 经原 AI Gateway 成功选择新雨林与极光场景。原 EEG / AI / 手势连接方式不变。验收日志在 artifacts/cloudflare-live.json，完整交接见 HANDOFF.md 第 15 节。
