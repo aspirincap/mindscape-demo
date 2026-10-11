@@ -9,6 +9,7 @@ import { normalizeVisual, smoothVisual, dispersionTarget } from './core/visual-s
 import { sceneAsset } from './core/scene-assets.mjs';
 import { scenePlayback, clampSceneOrbit, clearSceneVisual, sceneTourVisual } from './core/scene-tour.mjs';
 import { blendVisual } from './core/geo-tour.mjs';
+import { buildNaturalAttributes, advanceNaturalTime } from './core/scene-motion.mjs';
 
 export class WorldRenderer {
   constructor(container, onStats, onError) {
@@ -17,6 +18,7 @@ export class WorldRenderer {
     this.onStats = onStats;
     this.onError = onError;
     this.clock = 0; this.flowTime = 0; this.dispersion = 0;
+    this.naturalTime = 0; this.naturalEnabled = true;
     this.visual = clearSceneVisual(); this.displayVisual = {...this.visual, paletteMix:0}; this.previousCamera = new THREE.Vector3();
     this.active = true;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -43,6 +45,7 @@ export class WorldRenderer {
       uAccentGain: { value: 1 }, uTime: { value: 0 }, uCoherence: { value: 0.76 }, uAttention: { value: 0.58 },
       uPulse: { value: 0 }, uPixelRatio: { value: this.renderer.getPixelRatio() },
       uTransition: { value: 0 }, uPointScale: { value: 1.45 },
+      uNaturalTime:{value:0},uNaturalEnabled:{value:1},uNaturalAmount:{value:1},
       uDispersion:{value:0},uFlow:{value:1},uOriginal:{value:0},uBrightness:{value:1.25},
       uSaturation:{value:1.1},uPalette:{value:1},uSoftness:{value:.22},uFocus:{value:29},uAccent:{value:0},
     };
@@ -108,9 +111,12 @@ export class WorldRenderer {
       geometry.setAttribute('color', new THREE.BufferAttribute(c, 3));
       geometry.setAttribute('size', new THREE.BufferAttribute(s, 1));
       geometry.setAttribute('motion', new THREE.BufferAttribute(m, 1));
+      const {natural,capture}=buildNaturalAttributes(data,asset,indices);
+      geometry.setAttribute('natural',new THREE.BufferAttribute(natural,4));
+      geometry.setAttribute('capture',new THREE.BufferAttribute(capture,2));
       this.cache.set(id, geometry);
       const accent=new THREE.BufferGeometry(),n=Math.ceil(count/53);
-      for(const [name,itemSize,source]of [['position',3,p],['color',3,c],['size',1,s],['motion',1,m]]){
+      for(const [name,itemSize,source]of [['position',3,p],['color',3,c],['size',1,s],['motion',1,m],['natural',4,natural],['capture',2,capture]]){
         const values=new Float32Array(n*itemSize);
         for(let j=0;j<n;j++)values.set(source.subarray(j*53*itemSize,(j*53+1)*itemSize),j*itemSize);
         accent.setAttribute(name,new THREE.BufferAttribute(values,itemSize));
@@ -122,6 +128,7 @@ export class WorldRenderer {
     if(this.accents)this.scene.remove(this.accents);
     if(this.trailAccents)this.accentScene.remove(this.trailAccents);
     this.world = id;
+    this.naturalTime=0;
     this.model = asset;
     this.points = new THREE.Points(this.cache.get(id), this.material);
     this.points.frustumCulled = false;
@@ -150,6 +157,7 @@ export class WorldRenderer {
     if(restart){this.tour.restart();if(this.visual.mode==='original')this.tour.autoVisual=false;}else this.tour.resume();
   }
   setTourVisual(enabled) { if(this.tour&&(!enabled||this.visual.mode!=='original'))this.tour.autoVisual=enabled; }
+  setNaturalMotion(enabled) { this.naturalEnabled=!!enabled;this.effects.reset(); }
   applyGesture(command,capturedAt=performance.now()) {
     if (!this.ready || !this.active || this.drag || this.disposed) { this.clearGesture(); return; }
     if(performance.now()-capturedAt>GESTURE_MAX_AGE_MS){this.clearGesture();return;}
@@ -200,11 +208,15 @@ export class WorldRenderer {
     if (this.active && !this.reduced) { this.clock += dt; this.flowTime += Math.min(elapsed,.1)*visual.speed; this.phase += dt * (this.state.HR ?? 0) / 60 * Math.PI * 2; }
     this.transition = Math.max(0, this.transition - dt * 0.65);
     const raw=this.visual.mode==='original';
+    this.naturalTime=advanceNaturalTime(this.naturalTime,elapsed,{active:this.active,reduced:this.reduced,enabled:this.naturalEnabled,original:raw,paused:this.tour?.status==='paused',speed:visual.speed});
     this.dispersion=smoothVisual(this.dispersion,this.state.source === 'device'||follow ? visual.dispersion : dispersionTarget(this.state.coherence,visual),this.active?Math.min(elapsed,.1):0,visual.recovery);
     this.uniforms.uTransition.value = raw?0:this.transition;
     this.uniforms.uTime.value = this.flowTime;
     this.uniforms.uOriginal.value=raw?1:0;this.uniforms.uDispersion.value=raw?0:this.dispersion;
     this.uniforms.uFlow.value=raw?0:visual.flow;
+    this.uniforms.uNaturalTime.value=this.naturalTime;
+    this.uniforms.uNaturalEnabled.value=this.naturalEnabled&&!this.reduced&&!raw?1:0;
+    this.uniforms.uNaturalAmount.value=Math.min(1.5,visual.flow/.65);
     this.uniforms.uPointScale.value=(this.density<.6?1.65:1.4)*(raw?1:visual.pointSize);
     this.uniforms.uBrightness.value=raw?1:visual.brightness;
     this.uniforms.uSaturation.value=raw?1:visual.saturation;

@@ -34,9 +34,10 @@ export function buildSceneTour(id) {
 }
 export const scenePlayback = (id, reduced=false) => new TourPlayback(buildSceneTour(id), reduced);
 export function sceneTourVisual(progress) {
-  const visual = tourVisual(progress), envelope = Math.sin(Math.PI*clamp(progress,0,1))**2;
-  // Quiet breathing of the surface, rather than scattering an image reconstruction.
-  visual.dispersion = .075 * envelope;
+  const visual = tourVisual(progress);
+  // Nature moves by material; a camera tour must not scatter cliffs or trunks.
+  // Explicit manual dispersion and EEG controls remain available independently.
+  visual.dispersion = 0;
   visual.pointSize = Math.min(1.02,visual.pointSize);
   visual.brightness = Math.min(1.17,visual.brightness);
   visual.softness = Math.min(.13,visual.softness);

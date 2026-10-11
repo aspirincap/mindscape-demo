@@ -1,0 +1,80 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>在野 · 自然运动验收</title>
+<style>body{margin:24px;background:#08121b;color:#dcf2ee;font:14px system-ui}button,select{font:inherit;padding:10px;margin:3px;background:#18352f;color:inherit;border:1px solid #537d70;border-radius:8px}#view{width:960px;max-width:100%;aspect-ratio:16/9;position:relative;margin:16px 0}#view canvas{display:block;width:100%;height:100%;position:absolute;inset:0}pre{white-space:pre-wrap}#shots{display:flex;gap:12px;flex-wrap:wrap}figure{margin:0;max-width:460px}img{width:100%}label{margin:0 12px}figcaption{padding:8px}</style>
+<h1>在野 · 自然运动验收</h1><p>青色：瀑布 / 溪流；蓝色：水面；绿色：植物；橙色：漂浮生物；紫色：光影；灰色：静止区域。</p>
+<select id="scene" aria-label="场景"></select><button id="load">加载场景</button><button id="freeze">暂停运动</button><label><input type="checkbox" id="enabled" checked>自然运动</label><label><input type="checkbox" id="mask">显示区域</label><button id="capture">保存画面对照</button><button id="run">运行运动验收</button>
+<p id="status" role="status">准备加载</p><div id="view"></div><div id="shots"></div><pre id="results"></pre>
+<script type="module">
+import * as THREE from 'three';
+import {WorldRenderer} from '/src/renderer.js';
+import {SCENE_ASSETS} from '/src/core/scene-assets.mjs';
+import {locationForWorld} from '/src/core/locations.mjs';
+import {naturalMotionGLSL} from '/src/core/scene-motion.mjs';
+const menu=document.querySelector('#scene'),status=document.querySelector('#status'),view=document.querySelector('#view'),results=document.querySelector('#results'),mask=document.querySelector('#mask');
+let engine,errors=[];
+for(const a of SCENE_ASSETS){const option=document.createElement('option');option.value=a.id;option.textContent=locationForWorld(a.id).name+' · '+locationForWorld(a.id).title;menu.append(option);}menu.value='scene-04';
+const tick=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+function paintMask(){
+  for(const geometry of [engine.points.geometry,engine.accents.geometry]){
+    const src=geometry.userData.savedColors??=geometry.attributes.color.array.slice();
+    if(!mask.checked){geometry.attributes.color.array.set(src);geometry.attributes.color.needsUpdate=true;continue;}
+    const types=geometry.attributes.natural.array,c=geometry.attributes.color.array;
+    for(let i=0;i<types.length/4;i++){const kind=types[i*4],w=types[i*4+1],color=kind===0?[.05,.05,.05]:kind<=2?[.05,.7,.7]:kind===3?[.04,.18,.9]:kind<=5?[.08,.75,.1]:kind<=7?[.85,.3,.05]:[.65,.12,.85];c.set(color.map(v=>kind===0?v:v*(.4+.6*w)),i*3);}geometry.attributes.color.needsUpdate=true;
+  }
+}
+async function load(id){engine?.dispose();errors=[];engine=new WorldRenderer(view,()=>{},e=>errors.push(e));await engine.loadWorld(id);engine.takeCameraControl();engine.state.coherence=1;engine.setTourVisual(false);engine.setNaturalMotion(document.querySelector('#enabled').checked);mask.checked=false;document.querySelector('#freeze').textContent='暂停运动';status.textContent='已加载 '+locationForWorld(id).name;}
+document.querySelector('#load').onclick=()=>load(menu.value);
+document.querySelector('#freeze').onclick=()=>{engine.active=!engine.active;document.querySelector('#freeze').textContent=engine.active?'暂停运动':'继续运动';};
+document.querySelector('#enabled').onchange=e=>engine.setNaturalMotion(e.target.checked);
+mask.onchange=paintMask;
+document.querySelector('#capture').onclick=()=>{engine.render(performance.now());const figure=document.createElement('figure'),img=document.createElement('img'),caption=document.createElement('figcaption');img.src=engine.renderer.domElement.toDataURL('image/png');caption.textContent=locationForWorld(engine.world).name+' · '+(mask.checked?'运动区域':engine.naturalEnabled?'自然运动':'原场景');figure.append(img,caption);document.querySelector('#shots').append(figure);};
+
+function gpuChecks(assert){
+  const canvas=document.createElement('canvas'),gl=canvas.getContext('webgl2');assert(!!gl,'WebGL2 可用');
+  const shader=(type,source)=>{const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);assert(gl.getShaderParameter(s,gl.COMPILE_STATUS),gl.getShaderInfoLog(s)||'GLSL 编译通过');return s;};
+  const vs=shader(gl.VERTEX_SHADER,`#version 300 es\nprecision highp float;uniform vec4 material;uniform vec2 uv;uniform float time;out vec4 result;out float opacity;${naturalMotionGLSL}\nvoid main(){result=naturalMotion(vec3(0.),material,uv,time);opacity=naturalOpacity(material,time);gl_Position=vec4(0.,0.,0.,1.);}`);
+  const fs=shader(gl.FRAGMENT_SHADER,'#version 300 es\nprecision highp float;out vec4 color;void main(){color=vec4(1.);}');
+  const program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.transformFeedbackVaryings(program,['result','opacity'],gl.INTERLEAVED_ATTRIBS);gl.linkProgram(program);assert(gl.getProgramParameter(program,gl.LINK_STATUS),'运动着色器链接通过');
+  const buffer=gl.createBuffer(),tf=gl.createTransformFeedback();gl.useProgram(program);gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK,tf);gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER,buffer);gl.bufferData(gl.TRANSFORM_FEEDBACK_BUFFER,20,gl.STREAM_READ);gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER,0,buffer);gl.enable(gl.RASTERIZER_DISCARD);
+  const evaluate=(type,time,uv=[.5,.4],phase=0)=>{gl.uniform4f(gl.getUniformLocation(program,'material'),type,1,1,phase);gl.uniform2fv(gl.getUniformLocation(program,'uv'),uv);gl.uniform1f(gl.getUniformLocation(program,'time'),time);gl.beginTransformFeedback(gl.POINTS);gl.drawArrays(gl.POINTS,0,1);gl.endTransformFeedback();const out=new Float32Array(5);gl.getBufferSubData(gl.TRANSFORM_FEEDBACK_BUFFER,0,out);return out;};
+  try{
+    const a=evaluate(1,.2),b=evaluate(1,.4),c=evaluate(1,.6);
+    assert(a[1]<0&&b[1]<a[1]&&c[1]<b[1],'瀑布粒子连续向下，不会上下往返');
+    assert(c[1]-b[1]<b[1]-a[1],'瀑布下落速度逐渐增加');
+    assert(evaluate(1,0)[4]===0&&evaluate(1,1/.82-1e-5)[4]<.001,'循环重生在透明时发生');
+    const stream=evaluate(2,.6);assert(stream[0]>0&&stream[1]<0&&stream[2]>0,'溪水向前景顺坡流动');
+    for(const t of [0,.1,1,7,100]){const still=evaluate(0,t);assert(still[0]===0&&still[1]===0&&still[2]===0&&still[3]===1,'静止材质在 '+t+' 秒不移动或闪烁');}
+    const coral=evaluate(10,1);assert(coral[0]===0&&coral[1]===0&&coral[2]===0,'珊瑚只变化波光，不移动骨架');
+    const root=evaluate(5,2,[.5,1]),tip=evaluate(5,2,[.5,.1]);assert(Math.hypot(...root.slice(0,3))===0&&Math.hypot(...tip.slice(0,3))>.02,'海藻根部固定，顶部随流摆动');
+    for(let type=0;type<=10;type++)for(const t of [0,.3,1,50])assert(evaluate(type,t).every(Number.isFinite),'类型 '+type+' 在 '+t+' 秒数值有效');
+    assert(gl.getError()===0,'运动 GPU 验收无图形错误');
+  }finally{gl.disable(gl.RASTERIZER_DISCARD);gl.deleteTransformFeedback(tf);gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);gl.getExtension('WEBGL_lose_context')?.loseContext();}
+}
+document.querySelector('#run').onclick=async()=>{
+  const checks=[],frames=[],assert=(value,name)=>{if(!value)throw new Error(name);checks.push(name);};document.querySelector('#run').disabled=true;
+  try{
+    gpuChecks(assert);
+    for(const asset of SCENE_ASSETS){
+      status.textContent='渲染验收 '+asset.id;await load(asset.id);engine.renderer.setAnimationLoop(null);await tick();engine.naturalTime=2;engine.render(performance.now());
+      const gl=engine.renderer.getContext(),p=new Uint8Array(gl.drawingBufferWidth*gl.drawingBufferHeight*4);gl.readPixels(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight,gl.RGBA,gl.UNSIGNED_BYTE,p);
+      const lit=p.filter((v,i)=>i%4!==3&&v>20).length;assert(lit>1000&&gl.getError()===0&&errors.length===0,asset.id+' 正式渲染器绘制成功');
+      const attr=engine.points.geometry.attributes.natural.array,counts={};for(let i=0;i<attr.length;i+=4)counts[attr[i]]=(counts[attr[i]]||0)+1;
+      frames.push({id:asset.id,lit,counts});results.textContent=JSON.stringify({passed:checks.length,checks,frames},null,2);
+    }
+    await load('scene-04');engine.renderer.setAnimationLoop(null);
+    const step=()=>{const now=performance.now();engine.previous=now-1000/60;engine.render(now);};
+    step();let clock=engine.naturalTime;step();assert(engine.naturalTime>clock,'手动镜头下自然运动继续');
+    engine.resumeTour();engine.pauseTour();clock=engine.naturalTime;step();assert(engine.naturalTime===clock,'暂停导览冻结自然运动');
+    engine.resumeTour();step();assert(engine.naturalTime>clock,'继续导览恢复自然运动');
+    engine.active=false;clock=engine.naturalTime;step();assert(engine.naturalTime===clock,'全局暂停冻结自然运动');engine.active=true;
+    engine.reduced=true;step();assert(engine.naturalTime===clock&&engine.uniforms.uNaturalEnabled.value===0,'减少动态效果关闭自然运动');engine.reduced=false;
+    engine.setNaturalMotion(false);step();assert(engine.naturalTime===clock&&engine.uniforms.uNaturalEnabled.value===0,'自然运动开关有效');engine.setNaturalMotion(true);
+    engine.setVisual({...engine.visual,mode:'original'});step();assert(engine.naturalTime===clock&&engine.uniforms.uNaturalEnabled.value===0&&engine.uniforms.uDispersion.value===0,'原始点云保持原位');
+    const gl=engine.renderer.getContext(),readPixels=()=>{const p=new Uint8Array(gl.drawingBufferWidth*gl.drawingBufferHeight*4);gl.readPixels(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight,gl.RGBA,gl.UNSIGNED_BYTE,p);return p;};
+    engine.takeCameraControl();engine.active=false;step();const original=readPixels();engine.naturalTime+=20;step();const later=readPixels();assert(original.every((v,i)=>v===later[i]),'原始模式跨时间像素完全一致');
+    results.textContent=JSON.stringify({passed:checks.length,checks,frames},null,2);
+    await load('scene-04');menu.value='scene-04';status.textContent='完成：20/20 场景与物理方向检查通过';
+  }catch(e){status.textContent='失败：'+e.message;results.textContent=JSON.stringify({error:e.message,checks,frames},null,2);}
+  finally{document.querySelector('#run').disabled=false;}
+};
+await load(menu.value);
+</script></html>

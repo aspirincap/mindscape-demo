@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "shop:build": "node scripts/build-shop-demo.mjs",
+    "predev": "npm run shop:build && npm run audio:credits",
+    "prebuild": "npm run shop:build && npm run audio:credits",
+    "prebuild:cloudflare": "npm run shop:build && npm run audio:credits",
     "eeg": "node server/eeg.mjs",
     "test:eeg": "python3 -m unittest discover -s tests -p 'test_thinkgear.py' && node --test tests/eeg-model.test.mjs",
     "dev": "node server/index.mjs",
@@ -21,7 +25,8 @@
     "test:geo:visual": "node tests/geospatial-visual.mjs",
     "build:cloudflare": "vite build --mode cloudflare",
     "test:eeg:integration": "node tests/eeg-integration.mjs",
-    "test:eeg:browser": "node tests/eeg-browser.mjs"
+    "test:eeg:browser": "node tests/eeg-browser.mjs",
+    "audio:credits": "node scripts/build-audio-credits.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.1.0",

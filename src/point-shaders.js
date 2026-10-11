@@ -1,16 +1,21 @@
 // Ordinary point sprites, not a Gaussian-splat asset renderer. All motion is
 // reversible from the original position; no CPU position updates per frame.
+import { naturalMotionGLSL } from './core/scene-motion.mjs';
 export const pointVertex = `
 attribute vec3 color;
 attribute float size;
 attribute float motion;
+attribute vec4 natural;
+attribute vec2 capture;
 uniform float uTime, uCoherence, uAttention, uPulse, uPixelRatio;
 uniform float uTransition, uPointScale, uDispersion, uFlow, uOriginal;
+uniform float uNaturalTime, uNaturalEnabled, uNaturalAmount;
 uniform float uAccentGain;
 uniform float uBrightness, uSaturation, uPalette, uSoftness, uFocus, uAccent;
 varying vec3 vColor;
 varying float vAlpha;
 float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
+${naturalMotionGLSL}
 void main() {
   float seed = hash(position);
   float spread = max(uDispersion, uTransition);
@@ -23,8 +28,11 @@ void main() {
                    sin(q.x-t*.43)-cos(q.y+t*.57));
   vec3 radial = normalize(position-vec3(0.,4.,-5.)+vec3(.001));
   vec3 p = position + spread*uFlow*(flow*(1.8+motion*.5)+radial*seed*2.);
-  p += uAccent*(1.-uOriginal)*vec3(sin(t*.65+seed*50.),cos(t*.5+seed*33.),sin(t*.4+seed*25.))*.18;
-  p *= 1. + uPulse*.0013*uCoherence*(1.-uOriginal);
+  float nature=uNaturalEnabled*(1.-uOriginal);
+  vec4 physical=naturalMotion(position,natural,capture,uNaturalTime);
+  p += physical.xyz*nature*uNaturalAmount;
+  // Only an explicit dispersion effect can detach accents from solid surfaces.
+  p += uAccent*(1.-uOriginal)*spread*vec3(sin(t*.65+seed*50.),cos(t*.5+seed*33.),sin(t*.4+seed*25.))*.18;
   vec4 viewPosition = modelViewMatrix*vec4(p,1.);
   gl_Position = projectionMatrix*viewPosition;
   float blur = 1. + min(abs(-viewPosition.z-uFocus)*uSoftness*.045,1.8)*(1.-uOriginal);
@@ -42,8 +50,12 @@ void main() {
   float depth = exp(-pow(max(0.,-viewPosition.z-18.)*.019,1.35));
   float light = .9+uAttention*.2;
   vColor = max(vec3(0.),c)*uBrightness*light*depth;
+  // Optional heart-rate feedback affects light, never the scale of a cliff.
+  vColor *= 1.+uPulse*.004*uCoherence*(1.-uOriginal);
+  vColor *= mix(1.,physical.w,nature*min(1.,uNaturalAmount));
   vColor *= mix(1.1,3.2*uAccentGain,uAccent);
   vAlpha = (1.-uTransition*.7) * mix(.88,.58,uAccent) / (blur*blur);
+  vAlpha *= mix(1.,naturalOpacity(natural,uNaturalTime),nature*step(.001,uNaturalAmount));
 }`;
 export const pointFragment = `
 precision highp float;

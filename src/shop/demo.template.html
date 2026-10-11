@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#122b2a">
+  <meta name="description" content="在野旅行店演示：从一片风景，到一次出发。演示商品，不实际扣款或预订。">
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <title>森林慢行 · 在野旅行店 Demo</title>
+  <style>
+    :root{color-scheme:light;--paper:#f3f3eb;--ink:#173632;--muted:#64766e;--line:#d4ddd3;--mint:#88decc}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Helvetica Neue","PingFang SC",sans-serif}button,input,select{font:inherit}button,a{-webkit-tap-highlight-color:transparent}button{cursor:pointer}a{color:inherit;text-decoration:none}button{border:0}button:disabled{opacity:.35;cursor:default}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #338271;outline-offset:4px}h1,h2,h3,p{margin:0}h1,h2,h3{font-weight:500;line-height:1.3}button,a{touch-action:manipulation}[hidden]{display:none!important}.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+    .topbar{background:#102c29;color:#e6eee7;padding:20px max(26px,calc((100vw - 1220px)/2));display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:20px;letter-spacing:-.6px}.leaf{display:grid;place-items:center;width:28px;height:28px;background:#122b2a;border-radius:50%}.leaf:after{content:'';width:10px;height:16px;border:1.5px solid var(--mint);border-radius:80% 0 80% 0;transform:rotate(-15deg)}.brand .rule{width:1px;height:16px;background:#45615a}.brand small{font-size:15px;font-weight:400;color:#bbd0c5}.back{font-size:12px;color:#bbd0c5;padding:8px 0}.back:hover{color:white}
+    .demo-bar{display:flex;justify-content:center;gap:9px;padding:11px 20px;background:#e5eadc;font-size:11px;letter-spacing:.05em;color:#47614f}.demo-bar b{font-weight:600}.wrap{max-width:1220px;padding:32px 26px 130px;margin:auto}.breadcrumb{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:12px;margin:0 0 24px}.breadcrumb span:last-child{color:var(--ink)}
+    .source-context{font-size:12px;color:var(--muted);padding:12px 16px;margin:0 0 24px;border-left:2px solid #759787;background:#eaf0e5;border-radius:0 8px 8px 0}
+    .product-grid{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(340px,1fr);gap:48px;align-items:start}.photo{position:relative;min-height:555px;border-radius:24px;overflow:hidden;background:#1e3d29}.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.photo:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#0c211cec,transparent 75%)}.photo-top,.photo-copy{position:absolute;z-index:1;color:#eef1ea;left:30px;right:30px}.photo-top{top:28px;font-size:10px;letter-spacing:.18em;display:flex;justify-content:space-between}.photo-copy{bottom:30px}.photo-copy>span{font-size:10px;letter-spacing:.18em;color:#bde7c5}.photo-copy h1{font-size:48px;font-weight:300;letter-spacing:-.06em;margin:13px 0 16px;line-height:1.3;max-width:370px}.photo-copy p{font-size:13px;color:#c8dbcf;max-width:310px}.image-note{font-size:10px;color:var(--muted);margin:10px 4px 0}
+    .kicker{font-size:10px;letter-spacing:.16em;color:#527d69;margin:4px 0 13px}.merchant{font-size:11px;color:var(--muted);margin-bottom:7px}.purchase h2{font-size:27px;letter-spacing:-.05em}.tagline{font-size:12px;color:var(--muted);margin-top:9px}.price{display:flex;align-items:baseline;gap:4px;margin:22px 0 4px}.price strong{font-size:39px;font-weight:500;letter-spacing:-.06em;line-height:1}.price>span{font-size:19px}.price small{font-size:11px;color:var(--muted);margin-left:9px}.price-note{font-size:11px;color:var(--muted)}.facts{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;margin:22px 0;font-size:12px}.facts div{display:grid;gap:3px}.facts span{font-size:10px;color:var(--muted)}.facts strong{font-weight:500}
+    fieldset{border:0;padding:0;margin:20px 0}legend,.field-label{font-size:12px;font-weight:600;margin-bottom:9px}.options{display:flex;gap:9px}.option{position:relative;flex:1;cursor:pointer}.option input{position:absolute;left:12px;top:13px;accent-color:#246351}.option>span{display:block;border:1px solid var(--line);border-radius:12px;padding:9px 10px 9px 34px;font-size:12px;background:#f8f8f2}.option small{display:block;font-size:10px;color:var(--muted);margin-top:2px}.option:has(input:checked)>span{border-color:#33725d;background:#e8eee1}.option:has(input:focus-visible)>span{outline:2px solid #338271;outline-offset:3px}
+    select{background:#f8f8f2;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:12px;width:100%;font-size:12px}.field-label{display:block}.quantity-row{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:20px 0 16px}.quantity-row label{font-size:12px;font-weight:600}.counter{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:#f8f8f2}.counter button{height:33px;width:33px;border-radius:50%;color:var(--ink);background:transparent;font-size:20px}.counter button:hover{background:#e5eadc}.counter input{width:42px;border:0;text-align:center;background:transparent;color:var(--ink);font-size:13px;appearance:textfield;-moz-appearance:textfield}.counter input::-webkit-inner-spin-button,.counter input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.summary-line{display:flex;justify-content:space-between;font-size:12px;margin:9px 0;color:var(--muted)}.summary-line b{color:var(--ink);font-weight:500}.purchase-note{font-size:10px;color:var(--muted);padding-top:13px;border-top:1px solid var(--line);line-height:1.8}.secondary{padding:11px 20px;min-height:44px;border:1px solid #bdd0c3;border-radius:999px;color:var(--ink);background:transparent;font-size:12px;display:inline-flex;justify-content:center;align-items:center;gap:8px}.secondary:hover{background:#e5eadc}.share-product{width:100%;margin-top:17px}
+    .details{margin-top:52px;display:grid;grid-template-columns:1.22fr 1fr;gap:48px;border-top:1px solid var(--line);padding-top:30px}.details h2{font-size:23px;font-weight:400;margin-bottom:20px}.timeline{list-style:none;padding:0;margin:0}.timeline li{display:grid;grid-template-columns:52px 1fr;gap:20px;padding:0 0 24px}.timeline time{font-size:11px;color:#68806f;padding-top:3px}.timeline h3{font-size:14px;margin-bottom:5px}.timeline p{font-size:12px;color:var(--muted)}.detail-note{font-size:11px;color:var(--muted);margin-top:12px}.includes{display:grid;grid-template-columns:1fr 1fr;gap:22px}.includes h3{font-size:12px;margin-bottom:9px}.includes ul{padding-left:16px;font-size:12px;color:var(--muted);margin:0}.includes li{margin:8px 0}
+    .checkout-bar{position:fixed;bottom:0;left:0;right:0;z-index:5;background:#f6f7efeF;backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:15px max(26px,calc((100vw - 1168px)/2)) calc(15px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:24px}.checkout-caption{font-size:12px;margin-right:auto}.checkout-caption small{display:block;font-size:10px;color:var(--muted)}.total{min-width:90px}.total span{display:block;font-size:10px;color:var(--muted)}.total strong{font-size:24px;font-weight:500}.primary{min-height:48px;border-radius:999px;padding:13px 30px;background:#173f34;color:#eff6ea;font-weight:500;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:20px}.primary:hover{background:#255947}.checkout-bar .primary{min-width:185px}.message{font-size:12px;color:#2b6957;min-height:20px;margin:10px 0;overflow-wrap:anywhere}.manual-share{margin-top:12px}.manual-share label{font-size:11px}.manual-share input{display:block;width:100%;padding:11px;margin-top:5px;background:#fff;border:1px solid var(--line);border-radius:9px;color:var(--ink)}
+    .success{max-width:600px;margin:65px auto 90px;padding:38px;border:1px solid var(--line);border-radius:24px;background:#fafbf5}.success-mark{display:grid;place-items:center;width:56px;height:56px;background:#e2efdf;color:#29614d;border-radius:50%;font-size:24px;margin-bottom:24px}.success h1{font-size:30px;font-weight:400;margin-bottom:12px}.success>p{font-size:13px;color:var(--muted)}.receipt{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0;margin:25px 0;display:grid;grid-template-columns:90px 1fr;gap:13px;font-size:12px}.receipt dt{color:var(--muted)}.receipt dd{margin:0;text-align:right;overflow-wrap:anywhere}.success-actions{display:flex;flex-wrap:wrap;gap:10px}.success-actions .primary{flex:1}.success-footer{display:flex;justify-content:space-between;gap:14px;margin-top:23px;font-size:12px}.link-button{padding:0;background:transparent;color:#426653;text-decoration:underline;text-underline-offset:4px}.empty{padding:60px 10px;max-width:600px;margin:auto}.empty h1{font-size:30px}.empty p{margin:20px 0;color:var(--muted)}
+    @media(max-width:900px){.product-grid,.details{gap:27px;grid-template-columns:1fr 1fr}.photo{min-height:570px}.photo-copy h1{font-size:37px}.purchase h2{font-size:23px}}
+    @media(max-width:650px){.topbar{padding:17px 20px}.brand{font-size:18px}.brand small{font-size:12px}.back{font-size:11px}.demo-bar{font-size:10px;padding:9px 12px;gap:5px}.wrap{padding:18px 20px 120px}.breadcrumb{font-size:10px;margin-bottom:16px}.product-grid,.details{display:block}.photo{min-height:300px;border-radius:18px}.photo-top{top:20px;left:22px;right:22px}.photo-copy{left:22px;right:22px;bottom:24px}.photo-copy h1{font-size:37px;margin:9px 0}.photo-copy p{font-size:11px}.photo-copy>span{font-size:9px}.purchase{padding-top:24px}.purchase h2{font-size:25px}.kicker{margin-bottom:9px}.price{margin-top:19px}.facts{margin:20px 0}.details{margin-top:35px;padding-top:25px}.details>div+div{margin-top:25px}.checkout-bar{padding:12px 20px calc(12px + env(safe-area-inset-bottom));gap:12px}.checkout-caption{display:none}.checkout-bar .primary{min-width:0;flex:1}.total{min-width:100px}.total strong{font-size:23px}.success{margin:30px auto;padding:25px}.success h1{font-size:27px}.success-actions{flex-direction:column}.success-footer{font-size:11px}.receipt{grid-template-columns:75px 1fr}.demo-bar b{white-space:nowrap}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><a class="brand" data-return href="/"><i class="leaf" aria-hidden="true"></i>在野<span class="rule" aria-hidden="true"></span><small>旅行店</small></a><a class="back" data-return href="/">返回风景 ↗</a></header>
+  <div class="demo-bar"><b>DEMO · 演示商品</b><span>不实际扣款或预订 · 无需填写个人资料</span></div>
+  <main class="wrap">
+    <section id="unavailable" class="empty" hidden><h1>这个商品暂未收录。</h1><p>当前仅提供一款森林慢行示例商品，可返回风景重新查看。</p><a class="primary" data-return href="/">返回在野</a></section>
+    <div id="product-view">
+      <div class="breadcrumb"><a data-return href="/">在野</a><span>/</span><span>一起在野</span><span>/</span><span id="short-name"></span></div>
+      <p class="source-context" id="source-context"></p>
+      <div class="product-grid">
+        <div><div class="photo"><img id="hero-image" alt=""><div class="photo-top"><span>GO WILD / GO TOGETHER</span><span>01 — EXPERIENCE</span></div><div class="photo-copy"><span>A LITTLE CLOSER TO NATURE</span><h1 id="hero-title"></h1><p id="hero-subtitle"></p></div></div><p class="image-note">主题风景示意 · 非活动实景，非商家路线预览</p></div>
+        <section class="purchase" aria-labelledby="product-name"><div class="kicker">从风景，到出发。</div><p class="merchant" id="merchant"></p><h2 id="product-name"></h2><p class="tagline" id="tags"></p>
+          <div class="price"><span>¥</span><strong id="unit-price"></strong><small>示例价 / <span id="unit-label"></span></small></div><p class="price-note">仅用于体验下单流程，非真实报价。</p>
+          <div class="facts"><div><span>活动时长</span><strong id="duration"></strong></div><div><span>活动强度</span><strong id="intensity"></strong></div><div><span>相处方式</span><strong id="social"></strong></div><div><span>集合地点</span><strong id="city"></strong></div></div>
+          <form id="checkout"><fieldset><legend>选择规格</legend><div class="options" id="variants"></div></fieldset><label class="field-label" for="session">选择示例场次</label><select id="session" name="session" required></select>
+            <div class="quantity-row"><label for="quantity">购买份数</label><div class="counter"><button type="button" id="minus" aria-label="减少份数">−</button><input id="quantity" name="quantity" type="number" min="1" max="4" step="1" value="1" required inputmode="numeric"><button type="button" id="plus" aria-label="增加份数">+</button></div></div>
+            <div class="summary-line"><span>本次体验</span><b id="people-summary"></b></div><p class="purchase-note">双人规格仅代表商品人数，不表示同行者已确认。以下流程只生成本页演示记录，不向商家提交订单。</p>
+          </form>
+          <button class="secondary share-product" type="button" data-share>分享活动给朋友 ↗</button><p class="message" id="product-message" role="status"></p>
+        </section>
+      </div>
+      <section class="details"><div><h2 id="detail-title"></h2><ol class="timeline" id="itinerary"></ol><p class="detail-note" id="itinerary-note"></p></div><div><h2>关于这次体验</h2><div class="includes"><div><h3>示例包含</h3><ul id="included"></ul></div><div><h3>不包含</h3><ul id="excluded"></ul></div></div><p class="detail-note">当前没有真实主办方、库存或预约场次。真实商品资料到位后更新本页。</p></div></section>
+    </div>
+    <section class="success" id="success" aria-labelledby="success-title" hidden><div class="success-mark" aria-hidden="true">✓</div><div class="kicker">A SMALL STEP OUTSIDE</div><h1 id="success-title" tabindex="-1">模拟订单已生成。</h1><p>这一步先在这里体验。没有扣款，也没有实际预订或向商家提交订单。</p><dl class="receipt" id="receipt"></dl><div class="success-actions"><button class="primary" type="button" data-share>分享活动给同行者 ↗</button><a class="secondary" data-return href="/">回到风景</a></div><div class="success-footer"><span>仅在当前浏览器标签页保留演示记录</span><button id="again" class="link-button" type="button">重新体验</button></div><p class="message" id="success-message" role="status"></p></section>
+    <div id="manual-share" class="manual-share" hidden><label for="share-url">长按或选中链接复制</label><input id="share-url" readonly></div>
+    <noscript><p>请启用 JavaScript 体验规格选择与模拟下单。此页面不会扣款或实际预订。</p></noscript>
+  </main>
+  <footer class="checkout-bar" id="checkout-bar"><div class="checkout-caption"><span id="checkout-caption"></span><small>演示商品 · 不实际扣款</small></div><div class="total"><span>模拟合计</span><strong id="total" aria-live="polite"></strong></div><button id="submit-order" class="primary" type="submit" form="checkout">模拟下单 <span aria-hidden="true">↗</span></button></footer>
+  <script id="shop-product" type="application/json">__SHOP_PRODUCT_JSON__</script>
+  <script>
+    (() => {
+      'use strict';
+      const product = JSON.parse(document.getElementById('shop-product').textContent);
+      const model = (__SHOP_MODEL_FACTORY__)(product);
+      const byId = id => document.getElementById(id);
+      const text = (id, value) => { byId(id).textContent = value; };
+      const source = model.source(location.search);
+      const base = /^https?:$/.test(location.protocol) ? location.origin : 'https://mindscape-demo.aspirincap.workers.dev';
+      const sceneUrl = new URL('/?scene=' + source.scene, base).href;
+      const shareUrl = new URL('/shop-demo.html?product=' + product.id + '&scene=' + source.scene, base).href;
+      document.querySelectorAll('[data-return]').forEach(link => { link.href = sceneUrl; });
+      if (!source.validProduct) {
+        byId('product-view').hidden = true; byId('checkout-bar').hidden = true; byId('unavailable').hidden = false; return;
+      }
+      const destination = product.returnScenes.find(scene => scene.id === source.scene);
+      text('source-context', '来自「' + destination.name + '」的出发灵感。下方为' + product.shortName + '示例，非该目的地的当地活动。');
+      document.querySelector('.back').textContent = '返回' + destination.name + ' ↗';
+      product.headline.forEach(line => { const span = document.createElement('span'); span.style.display = 'block'; span.textContent = line; byId('hero-title').append(span); });
+      text('hero-subtitle', product.subtitle); text('product-name', product.activity); text('merchant', product.merchant);
+      text('short-name', product.shortName); text('tags', product.tags); text('detail-title', product.detailTitle); text('checkout-caption', product.checkoutCaption); text('itinerary-note', product.itineraryNote);
+      for (const key of ['duration', 'intensity', 'social', 'city']) text(key, product[key]);
+      byId('hero-image').src = product.image; byId('hero-image').alt = product.imageAlt;
+      document.title = product.activity + ' · 在野旅行店 Demo';
+      product.variants.forEach((variant, i) => {
+        const label = document.createElement('label'); label.className = 'option';
+        const input = document.createElement('input'); input.type = 'radio'; input.name = 'variant'; input.value = variant.id; input.defaultChecked = i === 0; input.checked = i === 0; input.required = true;
+        const span = document.createElement('span'); span.textContent = variant.label;
+        const small = document.createElement('small'); small.textContent = variant.people + ' 人 / 份';
+        span.append(small); label.append(input, span); byId('variants').append(label);
+      });
+      product.sessions.forEach(session => { const option = document.createElement('option'); option.value = session.id; option.textContent = session.label + ' · ' + session.detail; byId('session').append(option); });
+      product.itinerary.forEach(([time, title, description]) => {
+        const li = document.createElement('li'), stamp = document.createElement('time'), div = document.createElement('div'), h3 = document.createElement('h3'), p = document.createElement('p');
+        stamp.textContent = time; h3.textContent = title; p.textContent = description; div.append(h3, p); li.append(stamp, div); byId('itinerary').append(li);
+      });
+      for (const key of ['included', 'excluded']) product[key].forEach(value => { const li = document.createElement('li'); li.textContent = value; byId(key).append(li); });
+      byId('quantity').max = product.maxQuantity;
+      const selection = () => ({ variantId: document.querySelector('input[name="variant"]:checked')?.value, sessionId: byId('session').value, quantity: Number(byId('quantity').value) });
+      let order = null;
+      const storageKey = 'gowild-demo-order:' + product.id + ':' + source.scene;
+      function update() {
+        try {
+          const quote = model.quote(selection());
+          text('unit-price', model.money(quote.variant.priceCents)); text('unit-label', quote.variant.label); text('total', '¥' + model.money(quote.totalCents));
+          text('people-summary', quote.quantity + ' 份 · 共 ' + quote.people + ' 人'); text('product-message', '');
+          byId('minus').disabled = quote.quantity <= 1; byId('plus').disabled = quote.quantity >= product.maxQuantity; byId('submit-order').disabled = false;
+        } catch (error) {
+          text('total', '—'); text('people-summary', '请选择 1–' + product.maxQuantity + ' 份'); text('product-message', error.message);
+          byId('submit-order').disabled = true; byId('minus').disabled = false; byId('plus').disabled = false;
+        }
+      }
+      byId('checkout').addEventListener('input', update); byId('checkout').addEventListener('change', update);
+      for (const [id, direction] of [['minus', -1], ['plus', 1]]) byId(id).addEventListener('click', () => {
+        const value = Number(byId('quantity').value); byId('quantity').value = Math.min(product.maxQuantity, Math.max(1, (Number.isFinite(value) ? Math.round(value) : 1) + direction)); update();
+      });
+      function showOrder(focus = true) {
+        const quote = model.quote(order);
+        const rows = [['演示编号', order.id], ['商品', product.activity], ['示例场次', quote.session.label], ['规格与数量', quote.variant.label + ' × ' + quote.quantity + ' 份（共 ' + quote.people + ' 人）'], ['模拟合计', '¥' + model.money(quote.totalCents)], ['订单状态', '演示记录 · 未支付 · 未预订']];
+        byId('receipt').replaceChildren(); rows.forEach(([key, value]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = key; dd.textContent = value; byId('receipt').append(dt, dd); });
+        byId('product-view').hidden = true; byId('checkout-bar').hidden = true; byId('success').hidden = false; byId('manual-share').hidden = true;
+        if (focus) { window.scrollTo(0, 0); byId('success-title').focus({ preventScroll: true }); }
+      }
+      byId('checkout').addEventListener('submit', event => {
+        event.preventDefault(); if (order || !byId('checkout').reportValidity()) return;
+        try {
+          const selected = selection(); model.quote(selected);
+          order = { ...selected, id: 'DEMO-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase(), productId: product.id };
+          try { sessionStorage.setItem(storageKey, JSON.stringify(order)); } catch { /* Checkout remains usable without storage. */ }
+          showOrder();
+        } catch (error) { text('product-message', error.message); }
+      });
+      byId('again').addEventListener('click', () => {
+        order = null; try { sessionStorage.removeItem(storageKey); } catch {}
+        byId('checkout').reset(); update(); byId('success').hidden = true; byId('product-view').hidden = false; byId('checkout-bar').hidden = false; byId('manual-share').hidden = true;
+        text('success-message', ''); window.scrollTo(0, 0); document.querySelector('input[name="variant"]').focus({ preventScroll: true });
+      });
+      document.querySelectorAll('[data-share]').forEach(button => button.addEventListener('click', async () => {
+        const status = order ? 'success-message' : 'product-message';
+        byId('manual-share').hidden = false; byId('share-url').value = shareUrl;
+        byId(status).after(byId('manual-share')); text(status, '活动链接已准备好，可复制后发给朋友。');
+        try { await navigator.clipboard.writeText(shareUrl); text(status, '活动链接已复制。分享的是商品，不含你的演示订单。'); }
+        catch { byId('manual-share').hidden = false; byId('share-url').value = shareUrl; byId('share-url').focus(); byId('share-url').select(); text(status, '请复制下方活动链接。'); }
+      }));
+      byId('share-url').addEventListener('focus', event => event.target.select());
+      update();
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+        if (saved?.productId === product.id && /^DEMO-[A-Z0-9]+-[A-Z0-9]{1,4}$/.test(saved.id)) { model.quote(saved); order = saved; showOrder(false); }
+      } catch { /* Ignore stale or corrupted demonstration data. */ }
+    })();
+  </script>
+</body>
+</html>

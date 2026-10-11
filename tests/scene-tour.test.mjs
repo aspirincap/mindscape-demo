@@ -52,7 +52,7 @@ test('particle and colour choreography is continuous and begins/ends clear', () 
     for(const key of ['paletteMix','brightness','flow','dispersion','saturation']){assert.ok(Number.isFinite(visual[key]));assert.ok(Math.abs(visual[key]-previous[key])<.025);}
     maxPalette=Math.max(maxPalette,visual.paletteMix);maxDispersion=Math.max(maxDispersion,visual.dispersion);previous=visual;
   }
-  assert.ok(maxPalette>1.9);assert.ok(maxDispersion>.07&&maxDispersion<=.075);
+  assert.ok(maxPalette>1.9);assert.equal(maxDispersion,0,'automatic tours keep the reconstructed structure fixed');
 });
 
 test('R2 scene route allowlists exact content versions and rejects arbitrary keys or truncated assets', async () => {

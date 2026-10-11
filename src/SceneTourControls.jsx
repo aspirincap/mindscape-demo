@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { locationForWorld } from './core/locations.mjs';
+import { sceneMotionProfile } from './core/scene-motion.mjs';
 import './geo-controls.css';
 
 const stamp = seconds => `${Math.floor(seconds/60)}:${Math.floor(seconds%60).toString().padStart(2,'0')}`;
@@ -17,6 +18,8 @@ export function SceneTourControls({engine,ready,world,paused=false,stats}) {
     </section>
     <details className="geo-navigation-tools"><summary>导览与场景说明</summary><div className="geo-tools-grid">
       <label className="geo-option"><input type="checkbox" checked={tour.autoVisual} disabled={engine.current?.visual.mode==='original'} onChange={event=>act(()=>engine.current.setTourVisual(event.target.checked))}/>粒子与颜色随导览变化</label>
+      <label className="geo-option"><input type="checkbox" checked={engine.current.naturalEnabled} disabled={engine.current.visual.mode==='original'||engine.current.reduced} onChange={event=>act(()=>engine.current.setNaturalMotion(event.target.checked))}/>自然运动 · {sceneMotionProfile(world).name}</label>
+      <p className="scene-tour-note">{engine.current.reduced?'已遵循系统的减少动态效果设置。':sceneMotionProfile(world).description}</p>
       <p className="scene-tour-note">以{place.name}为灵感的图像重建场景，适合正面与小范围镜头探索。拖动、滚轮或单手动作可接管镜头；点击继续导览会平滑回到路线。</p>
     </div></details>
   </aside>;
