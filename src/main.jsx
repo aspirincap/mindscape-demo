@@ -37,6 +37,7 @@ import { GeoControls } from './GeoControls';
 import { SceneTourControls } from './SceneTourControls';
 import { GEO_WORLDS } from './core/geo-navigation.mjs';
 import { RiverineHero } from './riverine/RiverineHero';
+import { Brand } from './Brand';
 import './riverine/theme.css';
 
 
@@ -266,7 +267,7 @@ function App() {
   const stageIndex = stages.indexOf(stage);
   return <div className={`app world-${world} view-${stage} ${immersive ? 'immersive' : ''}`}>
     {stage !== 'connect' && <header className="topbar flex items-center justify-between">
-      <a className="brand" href="/" aria-label="Mindscape 意境首页"><span className="brand-orbit"><i/><i/><i/></span><span>mindscape<span className="brand-divider"/>意境</span></a>
+      <Brand/>
       <nav className="journey-nav" aria-label="体验阶段">{stages.map((step, index) => <button key={step} className={stage === step ? 'active' : index < stageIndex ? 'complete' : ''} aria-current={stage === step ? 'step' : undefined} disabled={index >= stageIndex || step === 'enter' || stage === 'enter'} onClick={() => navigateStage(step)}><span>{String(index + 1).padStart(2, '0')}</span>{stageNames[index]}</button>)}</nav>
       <div className="top-right"><button className="text-button" onClick={() => setControls(true)}><SlidersHorizontal size={16}/>调节共鸣</button><span className="local-status"><i/> {backend === 'cloudflare' ? '云端体验' : '本地体验'} <span className="local-label">{backend === 'cloudflare' ? 'CLOUDFLARE' : 'LOCAL DEMO'}</span></span><button className="icon-button" aria-label="使用说明" onClick={() => setHelp(true)}><Question size={19}/></button></div>
     </header>}

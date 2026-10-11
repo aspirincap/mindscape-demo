@@ -1,15 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { TREE_PATHS, MOTH_PATH, enterRiverine } from './design.mjs';
+import { enterRiverine } from './design.mjs';
+import { Brand } from '../Brand';
 import { HERO_SLIDES, useHeroSlideshow } from './slideshow';
 import './hero.css';
 import { LOCATIONS } from '../core/locations.mjs';
 
-export function RiverineMark({ label = 'Mindscape 意境首页', onClick }) {
-  return <a className="rv-logo" href="#" aria-label={label} onClick={onClick}>
-    <span className="rv-logo-disc"><svg className="rv-tree" viewBox="0 0 46 46" aria-hidden="true">{TREE_PATHS.map(d => <path key={d} d={d}/>)}</svg></span>
-    <svg className="rv-moth" viewBox="0 0 39 30" aria-hidden="true"><path d={MOTH_PATH}/><path d={MOTH_PATH} transform="matrix(-1 0 0 1 39 0)"/></svg>
-  </a>;
-}
 const Down = () => <svg className="rv-chevron" viewBox="0 0 11 6" aria-hidden="true"><path d="M.7.7 5.5 5.3 10.3.7"/></svg>;
 const Arrow = ({ partner = false }) => <span className="rv-arrow-disc"><svg viewBox={partner ? '0 0 5 8' : '0 0 6 9'} aria-hidden="true"><path d={partner ? 'M.5.5 3.5 3.5.5 6.5' : 'M.6.6 4 4 .6 7.4'}/></svg></span>;
 
@@ -27,7 +22,7 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
     return () => { document.removeEventListener('keydown', key); document.removeEventListener('pointerdown', outside); };
   }, [open]);
   useEffect(() => {
-    const media = matchMedia('(min-width: 650px)');
+    const media = matchMedia('(min-width: 761px)');
     const change = () => { if (media.matches) setOpen(false); };
     media.addEventListener('change', change); return () => media.removeEventListener('change', change);
   }, []);
@@ -40,7 +35,7 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
     </div>
     <div className="rv-shade rv-shade-x"/><div className="rv-shade rv-shade-y"/><div className="rv-shade rv-shade-corner"/>
     <header className="rv-header" ref={header}>
-      <RiverineMark onClick={e => e.preventDefault()}/>
+      <Brand className="rv-logo" onClick={e => e.preventDefault()}/>
       <button className="rv-menu" ref={menu} aria-label={open ? '关闭导航菜单' : '打开导航菜单'} aria-expanded={open} aria-controls="riverine-navigation" onClick={() => setOpen(v => !v)}>
         <svg className="rv-menu-bars" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 1h16"/><path d="M1 6h16"/><path d="M1 11h16"/></svg>
       </button>
