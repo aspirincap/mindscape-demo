@@ -10,7 +10,7 @@ document.querySelector('#run').onclick=async()=>{
  const assert=(value,label)=>{if(!value)throw new Error(label);rows.push({check:label,pass:true});output.textContent+='\nPASS: '+label;};
  try{
   engine?.dispose();engine=new WorldRenderer(document.querySelector('#scene'),()=>{},message=>{throw new Error(message);});engine.renderer.setAnimationLoop(null);
-  engine.active=false;engine.state={coherence:1,attention:.58,HR:72};await engine.loadWorld('eiffel');engine.transition=0;
+  engine.active=false;engine.state={coherence:1,attention:.58,HR:72};await engine.loadWorld('scene-01');engine.takeCameraControl();engine.transition=0;
   let now=performance.now();const frame=()=>{now+=1000/60;engine.render(now);};
   const pixels=()=>{const gl=engine.renderer.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,p=new Uint8Array(w*h*4);gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,p);return p;};
   let last=null;
@@ -28,10 +28,10 @@ document.querySelector('#run').onclick=async()=>{
   engine.effects.resize(600,440);assert(!engine.effects.trail.valid,'改变尺寸清除历史');engine.resize();
   engine.active=false;frame();assert(!engine.effects.trail.enabled,'暂停不积累拖尾');
   engine.active=true;engine.reduced=true;frame();assert(!engine.effects.trail.enabled,'减少动态效果偏好禁用拖尾');engine.reduced=false;
-  engine.setVisual({...DEFAULT_VISUAL,mode:'cinematic',dispersion:.8});for(let i=0;i<240;i++)frame();assert(engine.dispersion>.77,'聚散滑块驱动粒子展开');
-  engine.setVisual({...DEFAULT_VISUAL,dispersion:0});for(let i=0;i<660;i++)frame();assert(engine.dispersion<.0001,'粒子恢复原形');
-  const saved=engine.cache.get('eiffel').attributes.position.array.slice(0,30);engine.setVisual({...DEFAULT_VISUAL,dispersion:1});frame();assert(saved.every((v,i)=>v===engine.cache.get('eiffel').attributes.position.array[i]),'原始位置数组未被逐帧改写');
-  engine.setVisual(DEFAULT_VISUAL);await engine.loadWorld('fuji');assert(!engine.effects.trail.valid,'切换地点清除历史');engine.transition=0;frame();assert(engine.renderer.getContext().getError()===0,'跨模型切换无 GL 错误');
+  engine.setVisual({...DEFAULT_VISUAL,mode:'cinematic',dispersion:.8});for(let i=0;i<900;i++)frame();assert(engine.dispersion>.77,'聚散滑块驱动粒子展开');
+  engine.setVisual({...DEFAULT_VISUAL,dispersion:0});for(let i=0;i<900;i++)frame();assert(engine.dispersion<.0001,'粒子恢复原形');
+  const saved=engine.cache.get('scene-01').attributes.position.array.slice(0,30);engine.setVisual({...DEFAULT_VISUAL,dispersion:1});frame();assert(saved.every((v,i)=>v===engine.cache.get('scene-01').attributes.position.array[i]),'原始位置数组未被逐帧改写');
+  engine.setVisual(DEFAULT_VISUAL);await engine.loadWorld('scene-02');assert(!engine.effects.trail.valid,'切换地点清除历史');engine.transition=0;frame();assert(engine.renderer.getContext().getError()===0,'跨模型切换无 GL 错误');
   engine.effects.dispose();const has=engine.renderer.extensions.has;engine.renderer.extensions.has=name=>name==='EXT_color_buffer_float'?false:has.call(engine.renderer.extensions,name);
   engine.effects=new WorldEffects(engine.renderer,engine.scene,engine.accentScene,engine.camera);engine.renderer.extensions.has=has;engine.resize();frame();
   assert([engine.effects.bloom.renderTargetBright,...engine.effects.bloom.renderTargetsHorizontal,...engine.effects.bloom.renderTargetsVertical].every(target=>target.texture.type===UnsignedByteType),'无浮点扩展时全部光晕缓冲降级');

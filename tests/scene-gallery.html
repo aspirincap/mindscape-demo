@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>20 场景渲染验收</title>
+<style>body{margin:24px;background:#08121b;color:#dcf2ee;font:14px system-ui}button,select{font:inherit;padding:10px;background:#18352f;color:inherit;border:1px solid #537d70;border-radius:8px}#view{width:960px;max-width:100%;height:540px;position:relative;margin:20px 0}#view canvas{display:block}#results{white-space:pre-wrap}#gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}#gallery img{width:100%}figure{margin:0}figcaption{font-size:11px;padding:8px 0}</style>
+<h1>20 场景渲染验收</h1><p>正式 WorldRenderer / 原始素材 / 清晰与导览中段 / 镜头边界；此页不进入生产构建。</p>
+<select aria-label="验收场景" id="scene"></select> <button id="load">加载所选场景</button> <button id="run">运行 20 场景验收</button>
+<p id="status" role="status">准备就绪</p><div id="view"></div><div id="gallery"></div><pre id="results"></pre>
+<script type="module">
+import { WorldRenderer } from '/src/renderer.js';
+import { SCENE_ASSETS } from '/src/core/scene-assets.mjs';
+import { locationForWorld } from '/src/core/locations.mjs';
+const view=document.querySelector('#view'),menu=document.querySelector('#scene'),status=document.querySelector('#status'),results=document.querySelector('#results'),gallery=document.querySelector('#gallery');
+for(const asset of SCENE_ASSETS){const option=document.createElement('option');option.value=asset.id;option.textContent=`${asset.id} · ${locationForWorld(asset.id).title}`;menu.append(option);}
+let engine,errors=[];
+async function load(id){engine?.dispose();engine=new WorldRenderer(view,()=>{},e=>errors.push(e));await engine.loadWorld(id);return engine;}
+document.querySelector('#load').onclick=async()=>{try{await load(menu.value);status.textContent=`已加载 ${menu.value}`;}catch(e){status.textContent=e.message;}};
+const tick=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+function pixels(){
+  const gl=engine.renderer.getContext(),w=gl.drawingBufferWidth,h=gl.drawingBufferHeight,buffer=new Uint8Array(w*h*4);
+  engine.render(performance.now());gl.readPixels(0,0,w,h,gl.RGBA,gl.UNSIGNED_BYTE,buffer);
+  let lit=0,total=0;for(let i=0;i<buffer.length;i+=16){const energy=buffer[i]+buffer[i+1]+buffer[i+2];if(energy>24)lit++;total++;}
+  return {lit:lit/total,error:gl.getError()};
+}
+document.querySelector('#run').onclick=async()=>{
+  const report=[];errors=[];gallery.replaceChildren();document.querySelector('#run').disabled=true;
+  try{
+    for(const asset of SCENE_ASSETS){
+      status.textContent=`验收 ${asset.id} / 20`;await load(asset.id);await tick();await tick();
+      engine.renderer.setAnimationLoop(null);engine.pauseTour();const initial=pixels();
+      const image=document.createElement('img');image.src=engine.renderer.domElement.toDataURL('image/jpeg',.65);
+      const figure=document.createElement('figure'),caption=document.createElement('figcaption');caption.textContent=`${asset.id} · ${locationForWorld(asset.id).title}`;figure.append(image,caption);gallery.append(figure);
+      engine.tour.time=engine.tour.route.duration*.6;
+      for(let i=0;i<100;i++){const now=performance.now();engine.previous=now-16.667;engine.render(now);}
+      const middle=pixels(),palette=engine.uniforms.uPalette.value;
+      engine.takeCameraControl();engine.orbit={x:99,y:99,zoom:99};engine.constrainCamera();const edge=pixels();
+      const pass=initial.lit>.01&&middle.lit>.01&&edge.lit>.005&&initial.error===0&&middle.error===0&&edge.error===0&&engine.count===asset.count&&palette>.4;
+      report.push({id:asset.id,points:engine.count,duration:engine.tour.route.duration,initial,middle,edge,palette,pass});
+      results.textContent=JSON.stringify({passed:report.filter(r=>r.pass).length,total:report.length,errors,report},null,2);
+      if(!pass)throw new Error(`渲染验收失败：${asset.id}`);
+    }
+    status.textContent=`完成：${report.length}/20 通过，图形错误 ${errors.length}`;
+  }catch(e){errors.push(e.message);status.textContent=e.message;results.textContent=JSON.stringify({errors,report},null,2);}
+  finally{engine?.dispose();engine=null;document.querySelector('#run').disabled=false;}
+};
+</script></html>

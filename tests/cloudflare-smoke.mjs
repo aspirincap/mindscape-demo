@@ -1,6 +1,7 @@
 import { sample } from './eeg-fixture.mjs';
 import { EEG_PROTOCOL } from '../src/core/eeg-protocol.mjs';
 import { LOCATIONS } from '../src/core/locations.mjs';
+import { SCENE_ASSETS } from '../src/core/scene-assets.mjs';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { WebSocket } from 'ws';
@@ -58,7 +59,7 @@ try {
   assert.equal(sb.messages.some(m => m.type === 'eeg-frame'), false);
   const health = await (await fetch(`${base}/api/health`, { headers: a.headers })).json();
   assert.equal(health.sensorFresh, true); assert.equal(health.gateway, 'mindscape-demo');
-  assert.equal(health.worlds.length,12);
+  assert.equal(health.worlds.length,22);
   record('WebSocket sensor transport with strict visitor isolation');
   const auth = { Authorization: `Bearer ${a.token}`, 'Content-Type': 'application/json' };
   for (const input of [frame, { type: 'sensor', frame }, { ...sample(), protocol: 'mindscape.v1' }]) {
@@ -77,9 +78,9 @@ try {
   record('stale signal detected after 2.5 seconds');
   assert.equal((await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: '{"text":""}' })).status, 400);
   assert.equal((await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: 'a'.repeat(17000) })).status, 400);
-  const r = await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ text: '想去雾中森林，听一听树叶的声音。' }) });
+  const r = await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ text: '想去科尔科瓦多雨林，听一听树叶的声音。' }) });
   assert.equal(r.status, 200); const route = await r.json();
-  assert.equal(route.world, 'forest'); assert.equal(route.recommendedWorlds.length, 12);
+  assert.equal(route.world, 'scene-02'); assert.equal(route.recommendedWorlds.length, 22);
   if (process.env.REQUIRE_AI === '1') { assert.equal(route.mode, 'ai-gateway'); assert.equal(route.gateway, 'mindscape-demo'); }
   else assert.ok(['ai-gateway', 'local-rules'].includes(route.mode));
   if (process.env.EXPECTED_AI_MODEL) { assert.equal(route.mode, 'ai-gateway'); assert.equal(route.model, process.env.EXPECTED_AI_MODEL); assert.equal(health.model, process.env.EXPECTED_AI_MODEL); }
@@ -90,11 +91,21 @@ try {
     assert.equal(limited.fallback, 'rate-limited');
     record('AI request budget persists across requests');
   } else {
-    for (const path of ['/', '/globe/land-points.bin', '/fonts/InterVariable.woff2', ...LOCATIONS.map(l=>`/worlds/${l.worldId}.bin`)]) {
-      const asset = await fetch(base + path); assert.equal(asset.status, 200); const bytes=await asset.arrayBuffer(); if(path.startsWith('/worlds/'))assert.equal(bytes.byteLength,LOCATIONS.find(l=>path===`/worlds/${l.worldId}.bin`).pointCount*32);
+    for (const path of ['/', '/globe/land-points.bin', '/fonts/InterVariable.woff2', '/terrain/fuji/manifest.json', '/terrain/grand-canyon/manifest.json']) {
+      const asset = await fetch(base + path); assert.equal(asset.status, 200); await asset.arrayBuffer();
     }
-    assert.equal((await fetch(base + '/worlds/missing.bin')).status, 404);
-    record('live homepage, self-hosted font, globe and all 12 point-cloud assets');
+    for (const asset of SCENE_ASSETS) {
+      const r = await fetch(base + asset.url, { method: 'HEAD' });
+      assert.equal(r.status, 200); assert.equal(Number(r.headers.get('content-length')), asset.bytes);
+      assert.equal(r.headers.get('etag'), `"${asset.sha256}"`);
+      assert.match(r.headers.get('content-type'), /octet-stream/);
+    }
+    const first = await fetch(base + SCENE_ASSETS[0].url);
+    assert.equal(createHash('sha256').update(Buffer.from(await first.arrayBuffer())).digest('hex'), SCENE_ASSETS[0].sha256);
+    for (const path of ['/scene-data/missing.bin', '/scene-data/scene-01/wrong.bin', '/worlds/forest.bin']) assert.equal((await fetch(base + path)).status, 404);
+    const catalog = await (await fetch(base + '/api/locations')).json();
+    assert.deepEqual(catalog.locations.map(l=>l.worldId), LOCATIONS.map(l=>l.worldId));
+    record('live homepage, 2 geographic manifests, all 20 R2 sizes/ETags, binary checksum and obsolete asset rejection');
     const model = await fetch(base + '/mediapipe/gesture-recognizer-v1.task');
     assert.equal(model.status, 200);
     assert.equal(createHash('sha256').update(Buffer.from(await model.arrayBuffer())).digest('hex'), '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482');
@@ -104,7 +115,7 @@ try {
     assert.equal(worker.status, 200); const workerCode=await worker.text();assert.match(workerCode, /recognizeForVideo/);assert.match(workerCode, /numHands: 1/);
     assert.match(worker.headers.get('cache-control'), /no-cache/);
     record('same-origin single-hand model checksum, WASM MIME and worker cache policy');
-    const named=await (await fetch(`${base}/api/route`,{method:'POST',headers:a.headers,body:JSON.stringify({text:'我想去埃菲尔铁塔看看巴黎。'})})).json();assert.equal(named.world,'eiffel');assert.equal(named.recommendedWorlds.length,12);if(process.env.REQUIRE_AI==='1')assert.equal(named.mode,'ai-gateway');record(`new landmark recommendation: ${named.mode} / ${named.world}`);
+    const named=await (await fetch(`${base}/api/route`,{method:'POST',headers:a.headers,body:JSON.stringify({text:'我想去特罗姆瑟看极光。'})})).json();assert.equal(named.world,'scene-19');assert.equal(named.recommendedWorlds.length,22);if(process.env.REQUIRE_AI==='1')assert.equal(named.mode,'ai-gateway');record(`new landmark recommendation: ${named.mode} / ${named.world}`);
   }
   await mkdir('artifacts', { recursive: true });
   await writeFile(`artifacts/cloudflare-${mf ? 'local' : 'live'}.json`, JSON.stringify({ base, checks, ai: { mode: route.mode, model: route.model, gateway: route.gateway, requestId: route.gatewayRequestId, fallback: route.fallback }, at: new Date().toISOString() }, null, 2));

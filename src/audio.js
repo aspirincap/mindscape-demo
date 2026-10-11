@@ -33,7 +33,7 @@ export class AudioEngine {
     this.master.gain.setTargetAtTime(enabled ? volume * 0.7 : 0, now, 0.4);
     this.filter.frequency.setTargetAtTime(380 + coherence * 1300, now, 1);
     this.noiseGain.gain.setTargetAtTime(0.04 + tension * 0.13, now, 1);
-    const notes = world === 'abyss' ? [110, 164.81, 220, 329.63] : [130.81, 196, 261.63, 392];
+    const notes = ['scene-01','scene-07','scene-09','scene-11','scene-12','scene-13','scene-14','scene-15','scene-16'].includes(world) ? [110, 164.81, 220, 329.63] : [130.81, 196, 261.63, 392];
     this.voices.forEach(({ osc, gain }, i) => {
       osc.frequency.setTargetAtTime(notes[i] + Math.sin(now * 0.23 + i) * tension * 1.3, now, 0.8);
       gain.gain.setTargetAtTime((0.018 + coherence * 0.028) / (1 + i * 0.3), now, 1);

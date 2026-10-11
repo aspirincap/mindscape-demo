@@ -131,3 +131,10 @@ V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检�
 36 项单元测试、12 个地点实际 WebGL 绘制、23 项视觉浏览器检查通过，包括反馈清理、聚散恢复、帧率一致性与普通颜色缓冲降级。正式界面的预设、对照切换和 390px 布局已在本地浏览器验证。生产构建未包含开发测试页面、私人录屏和本机报告。
 
 线上首页、主脚本与渲染脚本 SHA-256 均与最终本地构建一致；健康检查确认 12 个地点、Cloudflare Workers 后端和既有 GLM-5.3-Flash / AI Gateway 配置。本次未重新调用付费 AI。验证记录位于本机 `artifacts/visual-style/deployment.json`、`verification.txt`、`metrics.json` 和 `comparison.png`。
+
+
+### 2026-10-11 V.10：22 场景目录与 R2 精选模型
+
+Worker 版本 `4c3a5a6d-7172-41d6-944d-6ebe0865c1f1`。保留富士山 / 大峡谷，加入 20 个用户精选图像重建点云与 48–72 秒微光导览。新 `/scene-data/*` 路由复用 TERRAIN 绑定和 mindscape-terrain 桶，R2 对象采用内容哈希不可变命名，按清单限制路径和校验大小。旧程序化世界文件不再部署。导入、上传及地点清单见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。
+
+线上验证：22 地点契约、20 个模型大小 / ETag、完整二进制校验、旧资产 404、单手模型 / WASM、EEG v2 会话隔离和心跳时效均通过。GLM-5.3-Flash 经原 AI Gateway 成功选择新雨林与极光场景。原 EEG / AI / 手势连接方式不变。验收日志在 artifacts/cloudflare-live.json，完整交接见 HANDOFF.md 第 15 节。

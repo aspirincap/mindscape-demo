@@ -1,6 +1,6 @@
 # 真实地理场景
 
-富士山与大峡谷使用真实地理数据，其余 10 个世界保留程序化主题模型。`public/worlds` 中的旧版 Fuji / Canyon 文件保留作兼容和视觉对照，实际入口通过 `GeoRenderer` 加载 `public/terrain`。
+富士山与大峡谷使用真实地理数据，入口通过 `GeoRenderer` 加载 `public/terrain`。V.10 其余 20 个世界使用用户提供的图像重建点云，见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。旧 `public/worlds` 的程序化资产已移出部署，本机备份在 `artifacts/legacy-worlds-v09/`。
 
 | 场景 | 经纬度选区（西、南、东、北） | 投影后范围 | 最细层显示点数 |
 | --- | --- | --- | --- |

@@ -33,24 +33,8 @@ test('60-second timeline traverses fragmentation, recovery and calm', () => {
 });
 
 test('local router honors an explicit world before its state fallback', () => {
-  assert.equal(chooseWorld('想进入雾中森林', { relaxation: 0.1 }).world, 'forest');
-  assert.equal(chooseWorld('想潜入深海放松', { relaxation: 0.9 }).world, 'abyss');
-  assert.equal(chooseWorld('今天有点累', { relaxation: 0.1 }).world, 'abyss');
+  assert.equal(chooseWorld('想进入雾中森林', { relaxation: 0.1 }).world, 'scene-02');
+  assert.equal(chooseWorld('想潜入深海放松', { relaxation: 0.9 }).world, 'scene-01');
+  assert.equal(chooseWorld('今天有点累', { relaxation: 0.1 }).world, 'scene-01');
   assert.equal(chooseWorld('nature and trees').mode, 'local-rules');
-});
-
-test('all twelve distinct point assets have valid finite geometry and portable PLY files', async () => {
-  const manifest = JSON.parse(await readFile(new URL('../public/worlds/manifest.json', import.meta.url)));
-  assert.equal(manifest.length, 12);
-  const hashes=new Set();
-  for (const world of manifest) {
-    const raw = await readFile(new URL(`../public/worlds/${world.id}.bin`, import.meta.url));
-    assert.equal(raw.length, world.count * 32);
-    hashes.add(createHash('sha256').update(raw).digest('hex'));
-    const points = new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4);
-    assert.ok(points.every(Number.isFinite));
-    const ply = await readFile(new URL(`../public/worlds/${world.id}.ply`, import.meta.url));
-    assert.ok(ply.subarray(0, 200).toString().includes(`element vertex ${world.count}`));
-  }
-  assert.equal(hashes.size,12);
 });

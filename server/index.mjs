@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
 import { chooseWorld } from '../src/core/state.mjs';
 import { LOCATIONS } from '../src/core/locations.mjs';
+import { sceneAssetForPath } from '../src/core/scene-assets.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const port = Number(process.env.PORT || 5173);
@@ -44,6 +45,17 @@ const server = http.createServer(async (req, res) => {
     const token = tokenFor(req);
     // Loopback service; reject cross-origin mutation from other websites.
     if (req.headers.origin && ![`http://localhost:${port}`, `http://127.0.0.1:${port}`].includes(req.headers.origin)) return json(res, 403, { error: 'Origin rejected' });
+    if (url.pathname.startsWith('/scene-data/')) {
+      const asset = sceneAssetForPath(url.pathname);
+      if (!asset) return json(res, 404, { error: 'Not found' });
+      if (!['GET', 'HEAD'].includes(req.method)) { res.writeHead(405, { Allow: 'GET, HEAD' }); return res.end(); }
+      const file = resolve(root, 'artifacts/scene-clouds-published', asset.key);
+      let info; try { info = await stat(file); } catch { return json(res, 404, { error: 'Import scene archive with npm run assets first' }); }
+      if (info.size !== asset.bytes) return json(res, 502, { error: 'Scene asset incomplete' });
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Content-Length': asset.bytes, 'Cache-Control': 'public, max-age=31536000, immutable', ETag: `"${asset.sha256}"` });
+      if (req.method === 'HEAD') return res.end();
+      const stream = createReadStream(file); stream.on('error', () => res.destroy()); res.on('close', () => stream.destroy()); stream.pipe(res); return;
+    }
     if (url.pathname.startsWith('/terrain-data/')) {
       const part=parseTerrainTile(url.pathname);
       if(!part)return json(res,404,{error:'Not found'});

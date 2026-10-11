@@ -1,6 +1,6 @@
 # Mindscape · 意境
 
-12 个世界的交互式点云 demo：粒子地球、心意推荐、真实 ThinkGear 脑电氛围反馈、MediaPipe 单手镜头控制。当前 V.09.1 首页使用四张生成风景的渐变轮播（每张停留 8 秒、过渡 2.4 秒、缓慢推进、暂停与手动选择），富士山和大峡谷保留默认空中导览与圆角边缘渐隐；前端沿用 Riverine 提示词的全视口布局、墨蓝遮罩、青绿品牌与奶白胶囊按钮、分行入场动画和响应式移动菜单。完整提示词、设计约束和 Mindscape 适配边界见 [DESIGN.md](DESIGN.md)。
+22 个世界的交互式点云 demo：粒子地球、心意推荐、真实 ThinkGear 脑电氛围反馈、MediaPipe 单手镜头控制。当前 V.10.0 首页使用四张生成风景的渐变轮播（每张停留 8 秒、过渡 2.4 秒、缓慢推进、暂停与手动选择），富士山和大峡谷保留默认空中导览与圆角边缘渐隐；前端沿用 Riverine 提示词的全视口布局、墨蓝遮罩、青绿品牌与奶白胶囊按钮、分行入场动画和响应式移动菜单。完整提示词、设计约束和 Mindscape 适配边界见 [DESIGN.md](DESIGN.md)。
 
 [线上体验](https://mindscape-demo.aspirincap.workers.dev/) · [部署与后端说明](CLOUDFLARE.md) · [地标资产与来源](LANDMARKS.md)
 
@@ -17,13 +17,13 @@ npm run dev
 
 ## 体验流程
 
-1. **连接**：河流视频首页；点击「开始我的旅程」或「直接探索 12 个世界」。模拟器默认就绪，无需设备；「连接共鸣」可打开模拟器与设备面板，手机入口收在导航菜单中。
+1. **连接**：四张生成风景的轮播首页；点击「开始我的旅程」或「直接探索 22 个世界」。模拟器默认就绪，无需设备；「连接共鸣」可打开模拟器与设备面板，手机入口收在导航菜单中。
 2. **心意**：文字或浏览器语音输入。云端通过 AI Gateway 调用 `@cf/zai-org/glm-5.3-flash`；失败或超额时明确回退本地规则。
-3. **探索**：旋转地球，或在 12 个地点目录中搜索地点、国家、风景。推荐不自动进入场景。
+3. **探索**：旋转地球，或在 22 个地点目录中搜索地点、国家、风景。推荐不自动进入场景。
 4. **抵达**：确认目的地后飞入。支持取消及 Esc 返回。
-5. **共鸣**：设备模式下，冥想与专注驱动限幅氛围，镜头始终由鼠标或单手控制；没有心率时不产生心率脉动。可随时返回地球更换地点。
+5. **共鸣**：设备模式下，冥想与专注驱动限幅氛围，镜头可跟随导览，也可由鼠标或单手接管；没有心率时不产生心率脉动。可随时返回地球更换地点。
 
-保留帕劳水下遗迹和屋久岛森林，新增长城、富士山、埃菲尔铁塔、罗马斗兽场、吉萨金字塔、泰姬陵、马丘比丘、大峡谷、悉尼歌剧院、伊瓜苏瀑布。富士山火山口为实测点云，外围及大峡谷为真实高程构建的地形；其余 10 处为主题创作。均不是 3DGS，详见 [真实地理场景](GEOSPATIAL.md)。
+富士山火山口为实测点云，外围及大峡谷为真实高程构建的地形。其余 20 个场景使用用户提供的精选点云，按画面主题匹配全球灵感地点，替换旧程序化场景；它们是图像重建，不是该地点的实地扫描。完整地点、点数和导览时长见 [新场景目录](SCENE-CATALOG.md)，真实地形见 [GEOSPATIAL.md](GEOSPATIAL.md)。
 
 模拟器保留手动滑杆与 60 秒演示。设备模式的 60 秒旅程仅提供呼吸引导，不替换真实数据。个人校准至少 30 秒、每项至少 25 个有效独立读数；最多等待 60 秒，暂停及隐藏页面不计时。
 
@@ -43,7 +43,7 @@ npm run dev
 - 两处模型默认启用 **边缘渐隐**：更宽的圆角衰减同时降低透明度和亮度；原坐标、RGB 与点云文件不变。原始档也保留此展示遮罩，可在导览设置中关闭作完整矩形对照。
 - 减少动态效果偏好默认暂停自动飞行；全局暂停与页面隐藏不推进路程。EEG 继续只影响原有受限氛围，不操纵镜头。
 
-真实地理场景的「恢复默认」回到清晰；其余十个主题场景仍默认流光。实现和验证见 [HANDOFF.md](HANDOFF.md) 第 13 节。
+所有场景默认清晰。20 个新模型采用 **48–72 秒「微光导览」**：初见风景 → 微光苏醒 → 色彩漫游 → 归于清晰。镜头在原拍摄方向附近轻移与推近，粒子、颜色和光晕平滑过渡，不绕到重建模型缺失的背面。支持暂停、继续、重新导览，手动接管后用 3 秒衔接返回；单手控制保留，镜头幅度按素材安全角度限制。实现见 [HANDOFF.md](HANDOFF.md) 第 15 节。
 
 ## 单手控制
 
@@ -75,7 +75,7 @@ npm run dev
 
 - `GET /api/session`：建立或读取当前会话，返回协议和配对配置字段。
 - `GET /api/health`：后端、设备时效与模型配置；不等同于推理成功。
-- `GET /api/locations`：全部 12 个目的地。
+- `GET /api/locations`：全部 22 个目的地。
 - `POST /api/eeg/lease`：HTTP 排错发送前取得连接所有权与时效租约。
 - `POST /api/frame`、`/ws?role=device`：统一 v2 设备信封；广播只有 `eeg-frame`。
 - `POST /api/route`：只接收 `{text}`，返回目的地排序。AI Gateway 仅处理用户主动提交的文字，不接入实时脑电流。
@@ -84,11 +84,11 @@ npm run dev
 
 富士山与大峡谷已升级为真实地理场景，包含分层点云、地图与地标跳转。数据来源、精度、复现及 R2 部署见 [GEOSPATIAL.md](GEOSPATIAL.md)。
 
-`npm run assets` 以固定随机种子重建 12 份旧版主题资产（不会覆盖真实地理场景），并更新 `src/core/point-counts.mjs`。`public/worlds/manifest.json` 记录点数、字节数、格式和来源。
+`npm run assets` 从用户提供的 ZIP 导入并校验 20 个模型；`node scripts/publish-scenes.mjs` 将原始二进制上传既有 R2。复现命令与清单见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。
 
-- `.bin`：每点 8 个 float32：`x y z r g b size motion`。
-- `.ply`：binary little endian XYZ + RGB，可导入其他点云工具。
-- 原有两世界由 `scripts/generate-worlds.mjs` 生成；10 个地标由 `scripts/generate-landmarks.mjs` 生成。
+- `.bin` 每点 8 个 float32：`x y z r g b size motion`。内容与 ZIP 的 SHA-256 一致，不改写坐标与 RGB。
+- 大文件在 R2，按所选场景加载。Git 中保留内容哈希、元数据、20 张轻量缩略图和 22 场景入口清单。
+- 旧 `public/worlds/*.bin / *.ply` 从部署中移除，本机备份在忽略的 `artifacts/legacy-worlds-v09/`。旧生成脚本仅供历史参考，不用于 V.10 构建。
 - 地球独立使用约 349KB 陆地粒子，进入场景后才按需请求该地点资产。切换渲染器时释放请求、动画、WebGL 上下文、几何和材质。
 - 地球数据来自公共领域 [Natural Earth](https://www.naturalearthdata.com/about/terms-of-use/)；来源见 `public/globe/SOURCE.md`。
 - Inter 字体本地托管，SIL OFL 许可证见 `public/fonts/LICENSE.txt`；图标为 Phosphor Icons。
@@ -106,14 +106,14 @@ npm run build
 开发服务上的浏览器验证页（不进入生产构建）：
 
 - `/tests/visual-lab.html`：三种显示层级的实际像素对照、反馈清除、聚散恢复及 GPU 资源生命周期检查。
-- `/tests/world-gallery.html`：依次加载全部世界，检查真实 WebGL 渲染并显示缩略图。
+- `/tests/scene-gallery.html`：依次加载 20 个新模型，验证真实 WebGL 帧、点数、清晰与导览中段、镜头边界，并显示缩略图。
 - `/tests/gesture-lab.html`：正式 Worker/WASM/模型、空白帧与 Google 公开手部图片，验证最多一只手。
 - `/tests/gesture-ui.html`：以公开图片生成测试视频流，验证真实组件开启、暂停、拒绝授权、关闭与卸载释放。
 - `/tests/rate-zoom.html`：以本机录像中的真实手型加合成上下位移验证正式组件，持续放大/缩小各 10 秒、中点停止、松开、重设中点、暂停与冻结视频。详见 [连续缩放验收](GESTURE-RATE-ZOOM.md)。
 - `/tests/responsive-lab.html`：同一应用在 390/768 像素 iframe 中的响应式布局。
 
-自动测试覆盖信号处理、12 个地点的有效性和独立资源、推荐契约、单手模式转换、捏合迟滞、中点停止、10/15/30Hz 速度一致性、过期输入停止、镜头边界与摄像头比例，以及视觉参数范围、恢复与反馈衰减的一致性。`test:eeg:integration` 检查实际 Node 转发链路；`test:eeg:browser` 检查设备 UI 与三类场景。旧 `browser.mjs` / `deployed-browser.mjs` 为历史双世界脚本，不作为本版验收。
+自动测试覆盖信号处理、22 个地点的有效性和独立资源、推荐契约、单手模式转换、捏合迟滞、中点停止、10/15/30Hz 速度一致性、过期输入停止、镜头边界与摄像头比例，以及视觉参数范围、恢复与反馈衰减的一致性。`test:eeg:integration` 检查实际 Node 转发链路；`test:eeg:browser` 检查设备 UI 与三类场景。旧 `browser.mjs` / `deployed-browser.mjs` 为历史双世界脚本，不作为本版验收。
 
 真实录屏诊断页 `/tests/recording-replay.html` 可按 15/10/5Hz 将本机视频送入正式 Worker。私人视频、旧控制器快照与逐帧数据保存在 gitignored `artifacts/recording-test/`，不打包、不上传。`scripts/verify-gesture-recording.mjs` 仅验证保存的 V.04.1 历史指令，不重新运行当前控制器；历史结果见 [真实录屏回归](GESTURE-RECORDING-TEST.md)。当前录像未包含持续捏住后上下控制速度的动作，新交互使用真实手型加合成位移测试，不等同于真人手感验收。
 
-Cloudflare 发布使用 `npm run deploy`，内部执行 `build:cloudflare`，仅打包正式 Mindscape 入口。普通 `npm run build` 包含本地 EEG Studio。真实地形 pack 不进 Git，新 clone 需从 R2 取回或按 GEOSPATIAL.md 重建。
+Cloudflare 发布使用 `npm run deploy`，内部执行 `build:cloudflare`，仅打包正式 Mindscape 入口。普通 `npm run build` 包含本地 EEG Studio。真实地形 pack 与 20 个新模型的二进制不进 Git，新 clone 需取回 R2 数据或按对应资产文档重建 / 导入。

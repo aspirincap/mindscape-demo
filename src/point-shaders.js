@@ -33,7 +33,8 @@ void main() {
   gl_PointSize = clamp(pointSize*blur,1.,18.*uPixelRatio);
   vec3 c = color;
   vec3 cold = mix(vec3(.045,.48,.9),vec3(.48,.12,.85),.5+.5*sin(position.y*.16+seed));
-  if(uPalette>.5) c=mix(c,cold,uPalette>1.5?.72:.3);
+  float paletteWeight = .3*clamp(uPalette,0.,1.) + .42*clamp(uPalette-1.,0.,1.);
+  c=mix(c,cold,paletteWeight);
   float luminance = dot(c,vec3(.2126,.7152,.0722));
   c = mix(vec3(luminance),c,uSaturation);
   float depth = exp(-pow(max(0.,-viewPosition.z-18.)*.019,1.35));

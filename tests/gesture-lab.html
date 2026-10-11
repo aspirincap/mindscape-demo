@@ -35,11 +35,11 @@ document.querySelector('#run').onclick = async () => {
 };
 document.querySelector('#render').onclick = async () => {
  engine?.dispose();engine=new WorldRenderer(document.querySelector('#scene'),()=>{},e=>report('FAIL: '+e));
- await engine.loadWorld('eiffel');engine.transition=0;engine.state.coherence=1;
+ await engine.loadWorld('scene-01');engine.transition=0;engine.state.coherence=1;
  engine.applyGesture({mode:'rotate',dx:.03,dy:.02});report(engine.orbit.x>.13?'PASS: 单手移动镜头':'FAIL: 镜头');
  const before=engine.orbit.zoom;const timer=setInterval(()=>engine.applyGesture({mode:'zoom',zoomRate:.5}),50);
  await new Promise(resolve=>setTimeout(resolve,1000));clearInterval(timer);engine.clearGesture();report(engine.orbit.zoom<before-.1?'PASS: 持续单手缩放':'FAIL: 缩放');
  report('DONE: 单手镜头渲染');
 };
-document.querySelector('#forest').onclick = async()=>{if(engine)await engine.loadWorld('forest');};
+document.querySelector('#forest').onclick = async()=>{if(engine)await engine.loadWorld('scene-02');};
 </script></html>

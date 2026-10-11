@@ -1,6 +1,6 @@
 # Mindscape 交接记录
 
-更新：2026-10-11（Asia/Shanghai）。当前 V.09.1 首页使用用户选定的四张生成图做渐变轮播，见第 14 节。V.09.0 两处真实地形的空中导览、清晰入场、平滑光影与边缘渐隐见第 13 节。V.08 Riverine 前端重构见第 12 节。第 9 / 11 节分别保留 V.06.1 / V.07.0 的历史验证。
+更新：2026-10-11（Asia/Shanghai）。当前 V.10.0 保留富士山 / 大峡谷，并以 20 个精选模型替换旧场景，加入微光短导览，见第 15 节。V.09.1 首页四图轮播见第 14 节。V.09.0 两处真实地形的空中导览、清晰入场、平滑光影与边缘渐隐见第 13 节。V.08 Riverine 前端重构见第 12 节。第 9 / 11 节分别保留 V.06.1 / V.07.0 的历史验证。
 
 ## 1. 接手先看
 
@@ -9,13 +9,13 @@
 | 本地目录 | `/Users/mvgz0331/Documents/ChatGPT/td-dive` |
 | 线上 Demo | https://mindscape-demo.aspirincap.workers.dev/ |
 | 公开仓库 | https://github.com/aspirincap/mindscape-demo |
-| UI 版本 | `V.09.1`；`package.json` 仍为 `1.0.0` |
-| 最近成功部署的 Worker 版本 | `ba6f9dfb-a3b2-4f28-8c3b-d7bcd8eadce5` |
-| 本轮代码提交 | 使用 `git log -1 -- src/riverine/slideshow.jsx` 查看，避免文档自引用提交哈希 |
-| 本轮范围 | 首页四张生成图渐变轮播、响应式资源与播放控制 |
-| 提交状态 | 本轮源码、设计规范与交接记录一起提交至 `main`；V.09.1 验证与发布见第 14 节。EEG v2 历史代码提交为 `1c8e2e2`。 |
+| UI 版本 | `V.10.0`；`package.json` 仍为 `1.0.0` |
+| 最近成功部署的 Worker 版本 | `4c3a5a6d-7172-41d6-944d-6ebe0865c1f1` |
+| 本轮代码提交 | 使用 `git log -1 -- src/core/scene-tour.mjs` 查看，避免文档自引用提交哈希 |
+| 本轮范围 | 22 个场景目录、20 个 R2 模型、全球灵感地点、48–72 秒微光导览 |
+| 提交状态 | 本轮源码、设计规范与交接记录一起提交至 `main`；V.10 验证与发布见第 15 节。EEG v2 历史代码提交为 `1c8e2e2`。 |
 
-当前有 12 个世界：富士山、大峡谷使用真实地理数据，其余 10 个继续使用原有程序化主题点云。两处真实场景已加入连续粒子流动、柔和光晕、稀疏亮点余辉，并接入共用的视觉调节面板。
+当前有 22 个世界：富士山、大峡谷使用真实地理数据；20 个新场景为用户精选素材的图像重建。地球位置为主题策划的“灵感坐标”，不能声称是采集坐标。两类场景共用视觉调节、单手控制与 EEG 氛围，所有入口默认清晰。
 
 原独立 EEG 监视器现在已经纳入本次接入范围，作为唯一串口采集进程。继续工作前先检查 `git status`；独立 `sharp-gui/` 项目仍不属于此仓库。生产构建通过正式 Vite mode 排除监视器入口，见第 8 节。
 
@@ -25,7 +25,7 @@
 - 场景必须支持更大空间探索；原模型没有米制尺度，因此不声称严格等于原面积的十倍。现在直接提供约 31 × 36 km、24 × 26 km 的真实区域。
 - 保留单手操作：手掌或拳头移动镜头；捏住后上下移动控制持续缩放速度，松开停止。没有双手操作要求。
 - 进入场景 →「视觉调节」：三个预设「清晰 / 流光 / 梦境」；三档对照「原始点云 / 粒子流动 / 完整光影」；可调聚散、粒子尺寸、亮度、光晕、余辉等。
-- 上述视觉增强已经实现并部署。V.09 两处地理场景默认 **清晰 + 完整光影 + 空中导览**，其余主题场景默认流光；见第 13 节。
+- 上述视觉增强已经实现并部署。V.10 两处地理场景保持 **清晰 + 完整光影 + 空中导览**，20 个新场景改为清晰入场与微光短导览；见第 13 / 15 节。
 - 加工发生在渲染层，保留原始坐标与 RGB，用户可随时回到原始档对照。
 
 历史参考文件：`/Users/mvgz0331/Downloads/DESIGN (3).md`、`/Users/mvgz0331/Desktop/未命名.mov`。录像是用户私人测试素材，不应提交或上传。该设计为历史参考；V.08 改为 Riverine 的墨蓝 / 青绿 / 奶白界面。真实场景的加工色彩继续由原视觉预设决定。
@@ -37,7 +37,7 @@ React 入口 / 地球选点 / 意图与状态
   ├─ Fuji、Grand Canyon → GeoRenderer → manifest + height grid + tileset
   │                                      ↓
   │                       /terrain-data/... PNTS → Worker → 私有 R2 pack 范围读取
-  └─ 其余 10 个世界 → 原 WorldRenderer → public/worlds/*.bin
+  └─ 其余 20 个世界 → WorldRenderer → /scene-data/... → Worker → R2 scenes/<id>/<hash>.bin
 
 两个渲染器共用视觉参数、视觉面板、光晕与余辉模块
 MediaPipe 单手识别 → 手势命令 → 当前渲染器镜头
@@ -58,14 +58,14 @@ MediaPipe 单手识别 → 手势命令 → 当前渲染器镜头
 | `src/core/geo-navigation.mjs` | 世界白名单、米制移动、双线性高程采样、连续缩放与停止条件 |
 | `src/core/gestures.mjs`、`src/core/gesture-zoom.mjs` | 手势判定、单手连续缩放逻辑 |
 | `src/core/locations.mjs`、`src/GlobeExperience.jsx` | 地点目录和地球入口；两处真实场景的范围标识 |
-| `src/renderer.js`、`src/point-shaders.js` | 其他 10 个主题世界的原渲染实现 |
+| `src/renderer.js`、`src/point-shaders.js` | 20 个图像重建场景、小幅镜头、短导览和连续调色 |
 | `worker/terrain.mjs`、`src/core/terrain-format.mjs` | R2 范围读取、路径/版本/长度校验、PNTS 响应 |
 | `worker/index.mjs` | Worker 路由；terrain 路由在静态资源之前 |
 | `server/index.mjs` | 本地 HTTP/WebSocket 服务；相同 terrain 路径读取本地 pack |
 | `scripts/geospatial/` | 官方数据采集、固定源索引、投影/采样/PNTS 打包 |
 | `public/terrain/{world}/` | 已生成的清单、tileset、导航高度网格、卫星图和框选图 |
 
-`locations.mjs` 的 `pointCount` 仍对应旧 `.bin` 文件，用于兼容；真实场景点数以各自 `manifest.json` 为准。不要为了让目录数字一致而破坏旧资产校验。
+`locations.mjs` 的点数来自 `point-counts.mjs`：真实场景对应 manifest 的最细层总点数；20 个新模型对应 `scene-assets.mjs` 的原文件点数。运行时可能因 LOD / 画质减少实际绘制点数。
 
 ## 4. 两处真实数据：范围、来源、版本
 
@@ -368,7 +368,7 @@ TEST_HTTPS_PROXY=http://127.0.0.1:7897 node tests/geospatial-live.mjs
 
 已部署 Worker `adb1ef45-6789-464c-acce-554327ec0443`，地址仍为 https://mindscape-demo.aspirincap.workers.dev/ 。线上复核富士山自动进入 5 分钟导览、大峡谷进入 4 分钟导览，清晰画面与暂停按钮正常，页脚 V.09.0；两处切换后未发现线上控制台错误。截图在 `artifacts/tour/online-fuji.jpg`、`online-canyon.jpg`。源数据、后端、Gateway 和 EEG 协议没有更改。
 
-本轮代码与文档一起提交并推送 `origin/main`，精确提交用 `git log -1 -- src/riverine/slideshow.jsx` 查看。5186 本轮预览收尾后关闭，未改动原 5174 / 8765 进程。私人 BIN、个人统计与 `artifacts/` 不进入 Git 或部署资产。
+本轮代码与文档一起提交并推送 `origin/main`，精确提交用 `git log -1 -- src/core/scene-tour.mjs` 查看。5186 本轮预览收尾后关闭，未改动原 5174 / 8765 进程。私人 BIN、个人统计与 `artifacts/` 不进入 Git 或部署资产。
 
 
 ## 14. 四张生成图首页轮播（V.09.1）
@@ -385,3 +385,29 @@ TEST_HTTPS_PROXY=http://127.0.0.1:7897 node tests/geospatial-live.mjs
 验证：`npm test` 61 / 61 通过，`npm run build:cloudflare` 通过；内置浏览器实际检查 1280×720 桌面与 390×844 手机、四图加载、暂停/恢复、手动选图、自动轮播和峡谷回到富士的渐变叠层，无横向溢出。浏览器控制台未见本次新增错误。减少动态效果通过实现检查，未切换用户系统偏好做实际验证。本次没有重跑旧 EEG / 地形全套浏览器回归。
 
 发布：已部署 Worker `ba6f9dfb-a3b2-4f28-8c3b-d7bcd8eadce5`。线上四张哈希 WebP 全部解码成功，无旧 MP4 请求、无横向溢出，暂停和选图可用，未见控制台错误。线上截图 `artifacts/hero-carousel/online-desktop.png`，手机截图 `artifacts/hero-carousel/mobile-ocean.png`。本轮源代码、压缩背景与文档一起提交并推送 `origin/main`；原始 PNG 不参与部署。
+
+
+## 15. V.10.0 — 20 个精选模型与微光导览
+
+用户指定 ZIP 里的全部 20 个模型已用于替换旧程序化场景，仅保留富士山与大峡谷，合计 22 个世界。地点映射、时长、点数、格式、复现和部署路径详见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。
+
+### 实现要点
+
+- 以 ZIP 内清单和 SHA-256 为准，244,248,064 字节的模型保持原样，20 个新对象放在已有 R2，按需加载；Worker 只允许内容哈希清单中的路径。源文件 / 源记录元数据不公开，不进入 Git。
+- 新模型为图像重建；地球、详情及导览说明明确“灵感坐标 / 非实地扫描”。在 SCENE_PLACES 修改地点，在 SCENE_ASSETS 查看对应模型。
+- WorldRenderer 默认清晰，采用原推荐相机与素材安全 yaw。48–72 秒循环，四章、连续 paletteMix、克制聚散与光晕。镜头幅度很小，不追求地形飞行。
+- SceneTourControls 提供暂停 / 继续 / 重新导览和光影随行开关。手势 / 鼠标接管后 3 秒加入路线；手机使用紧凑面板。保留原单手连续速率缩放和 EEG v2。
+- 原有 12 份程序化 BIN / PLY 移到本机 artifacts/legacy-worlds-v09/，退出 Git 与生产部署；真实地形 public/terrain 和 R2 pack 未修改。旧生成脚本是历史资料，npm run assets 现调用 import-scenes.py。
+
+### 验证与发布
+
+- npm test：66 / 66，通过所有导览、格式、推荐、单手与 EEG 单测。
+- npm run test:eeg:integration：通过 Node WS 实际链路、隔离、独立字段时效、断线和停止回归，无需串口。
+- npm run test:cloudflare：本地 Worker 会话 / EEG v2 / 推荐与限流回归通过。
+- 20 / 20 正式渲染器 GPU 验收通过，原点数一致，清晰 / 中段 / 镜头边界有有效像素，图形错误 0；结果在 artifacts/scene-verification/gpu.json。
+- 正式构建成功；线上 Worker 版本 `4c3a5a6d-7172-41d6-944d-6ebe0865c1f1`。原 Gateway / 模型与 Durable Object 绑定保持不变。
+- 线上 smoke 全部通过：20 个模型 HEAD 大小 / ETag、一份完整二进制 SHA-256、两个地形 manifest、22 个 API 地点、旧资产 404、手势资源与 WSS / EEG 会话隔离；真实 AI Gateway 将雨林推荐为 scene-02，将特罗姆瑟推荐为 scene-19。
+- 手机 390×844 iframe 实际操作通过：进入极光、暂停、手动光影、恢复自动光影、重新导览、场景说明。截图 artifacts/scene-verification/mobile.png。
+- 本轮未打开串口或真人摄像头；没有重新进行完整 EEG 设备 UI / 真人手势录屏验收。原协议、手势核心测试和中继链路回归已通过。
+- 新素材上的视觉管线回归：23 项检查通过（三档有可测画面差异、聚散展开 / 恢复、余辉清除、减少动态偏好、普通颜色缓冲降级、资源释放）。为双层平滑留出 15 秒模拟收敛时间；日志 artifacts/scene-verification/visual.txt。
+- 正式站点实际进入怀托摩并加载微光导览，页面错误日志为空；截图 artifacts/scene-verification/live-waitomo.png。开发版手机视口另外确认富士山 5 分钟、大峡谷 4 分钟原导览正常出现，截图 geo-retained.png。

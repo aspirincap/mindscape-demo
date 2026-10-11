@@ -27,10 +27,11 @@ export function demoFrame(seconds) {
 export function chooseWorld(text, frame = DEFAULT_FRAME) {
   const words = text.toLowerCase();
   const ranked = LOCATIONS.map((location, index) => {
-    const explicit = [location.name, location.english, ...location.aliases.split(' ')].filter(word => word.length > 1).some(word => words.includes(word.toLowerCase()));
+    const named = [location.name, location.english, location.title].some(word => words.includes(word.toLowerCase()));
+    const explicit = location.aliases.split(' ').filter(word => word.length > 1).some(word => words.includes(word.toLowerCase()));
     const themes = location.theme.filter(word => words.includes(word)).length;
-    const defaultWorld = frame.relaxation < .5 ? 'abyss' : 'forest';
-    return { worldId: location.worldId, locationId: location.id, score: explicit ? 96 : themes ? 88 + Math.min(5, themes) : location.worldId === defaultWorld ? 82 : 70 - index, reason: location.description };
+    const defaultWorld = frame.relaxation < .5 ? 'scene-01' : 'scene-02';
+    return { worldId: location.worldId, locationId: location.id, score: named ? 98 : explicit ? 96 : themes ? 88 + Math.min(5, themes) : location.worldId === defaultWorld ? 82 : 70 - index, reason: location.description };
   }).sort((a,b) => b.score-a.score);
   const first = ranked[0];
   return { world: first.worldId, mode: 'local-rules', theme: locationForWorld(first.worldId).theme[0], reason: first.reason, recommendedWorlds: ranked };

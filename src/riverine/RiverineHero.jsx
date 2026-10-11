@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { TREE_PATHS, MOTH_PATH, enterRiverine } from './design.mjs';
 import { HERO_SLIDES, useHeroSlideshow } from './slideshow';
 import './hero.css';
+import { LOCATIONS } from '../core/locations.mjs';
 
 export function RiverineMark({ label = 'Mindscape 意境首页', onClick }) {
   return <a className="rv-logo" href="#" aria-label={label} onClick={onClick}>
@@ -58,8 +59,8 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
     <div className="rv-hero">
       <div className="rv-brand">mindscape · 意境</div>
       <h1 className="rv-title">{['跟随呼吸，', '让心意流动，', '与世界共鸣。'].map(line => <span className="rv-title-line" key={line}><span>{line}</span></span>)}</h1>
-      <p className="rv-lede"><span>从河流的脉络，走进山海的回响。</span><span>在十二个世界里，找到自己的节奏。</span></p>
-      <div className="rv-actions"><a className="rv-cta" href="#future" onClick={action(onStart)}>开始我的旅程 <Arrow/></a><a className="rv-discover" href="#rivers" onClick={action(onExplore)}>直接探索 12 个世界</a></div>
+      <p className="rv-lede"><span>从河流的脉络，走进山海的回响。</span><span>在 {LOCATIONS.length} 个世界里，找到自己的节奏。</span></p>
+      <div className="rv-actions"><a className="rv-cta" href="#future" onClick={action(onStart)}>开始我的旅程 <Arrow/></a><a className="rv-discover" href="#rivers" onClick={action(onExplore)}>直接探索 {LOCATIONS.length} 个世界</a></div>
     </div>
     <div className="rv-carousel-controls" role="group" aria-label="首页背景选择" onFocusCapture={() => carousel.setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) carousel.setFocused(false); }}>
       <span className="rv-slide-name">{HERO_SLIDES[carousel.current].name}</span>

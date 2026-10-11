@@ -5,7 +5,10 @@ import { integrateGestureZoom, ZOOM_LIMITS } from './core/gesture-zoom.mjs';
 
 import { pointVertex, pointFragment } from './point-shaders.js';
 import { WorldEffects } from './world-effects.js';
-import { DEFAULT_VISUAL, normalizeVisual, smoothVisual, dispersionTarget } from './core/visual-style.mjs';
+import { normalizeVisual, smoothVisual, dispersionTarget } from './core/visual-style.mjs';
+import { sceneAsset } from './core/scene-assets.mjs';
+import { scenePlayback, clampSceneOrbit, clearSceneVisual, sceneTourVisual } from './core/scene-tour.mjs';
+import { blendVisual } from './core/geo-tour.mjs';
 
 export class WorldRenderer {
   constructor(container, onStats, onError) {
@@ -14,17 +17,16 @@ export class WorldRenderer {
     this.onStats = onStats;
     this.onError = onError;
     this.clock = 0; this.flowTime = 0; this.dispersion = 0;
-    this.visual = normalizeVisual(DEFAULT_VISUAL); this.previousCamera = new THREE.Vector3();
+    this.visual = clearSceneVisual(); this.displayVisual = {...this.visual, paletteMix:0}; this.previousCamera = new THREE.Vector3();
     this.active = true;
     this.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.coarse = matchMedia('(pointer: coarse)').matches;
-    this.world = 'abyss';
+    this.world = 'scene-01';
     this.density = 1;
     this.state = { coherence: 0.76, attention: 0.58, HR: null };
     this.orbit = { x: 0.18, y: 0, zoom: 0 };
     this.inputRevision = 0;
     this.gesture = { mode: 'idle', strength: 0, time: 0 };
-    this.viewAttention = .58; this.viewDrift = 0;
     this.cache = new Map(); this.accentCache = new Map();
     this.transition = 0;
     this.phase = 0;
@@ -34,7 +36,7 @@ export class WorldRenderer {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.coarse ? 1 : 1.45));
     this.renderer.setClearColor('#000000');
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.05;
-    this.renderer.domElement.setAttribute('aria-label', '交互式三维点云世界，拖动旋转，滚轮缩放');
+    this.renderer.domElement.setAttribute('aria-label', '交互式点云场景，拖动小幅探索，滚轮缩放');
     this.renderer.domElement.setAttribute('role', 'img');
     container.appendChild(this.renderer.domElement);
     this.uniforms = {
@@ -58,12 +60,14 @@ export class WorldRenderer {
       if (!this.drag) return;
       this.orbit.x = THREE.MathUtils.clamp(this.orbit.x + (e.clientX - this.drag.x) * 0.003, -0.85, 0.85);
       this.orbit.y = THREE.MathUtils.clamp(this.orbit.y + (e.clientY - this.drag.y) * 0.015, -3, 4);
+      this.constrainCamera();
       this.drag = { x: e.clientX, y: e.clientY };
     }, options);
     canvas.addEventListener('pointerup', () => { this.drag = null; }, options);
     canvas.addEventListener('pointercancel', () => { this.drag = null; }, options);
-    canvas.addEventListener('wheel', e => { e.preventDefault(); this.takePointerControl(); this.orbit.zoom = THREE.MathUtils.clamp(this.orbit.zoom + e.deltaY * 0.01, ZOOM_LIMITS.min, ZOOM_LIMITS.max); }, { ...options, passive: false });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); this.takePointerControl(); this.orbit.zoom = THREE.MathUtils.clamp(this.orbit.zoom + e.deltaY * 0.003, ZOOM_LIMITS.min, ZOOM_LIMITS.max); this.constrainCamera(); }, { ...options, passive: false });
     canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); this.onError('图形上下文中断，请刷新页面恢复。'); }, options);
+    matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', e => { this.reduced=e.matches;if(e.matches)this.pauseTour();this.effects.reset(); }, options);
     this.previous = performance.now();
     this.lastStats = this.previous;
     this.frames = 0;
@@ -77,13 +81,15 @@ export class WorldRenderer {
     this.effects?.resize(Math.max(1,width),Math.max(1,height));
   }
   async loadWorld(id) {
+    const asset = sceneAsset(id);
+    if (!asset) throw new Error('未知场景，请返回地球重新选择。');
     const generation = this.loadGeneration = (this.loadGeneration || 0) + 1;
     if (!this.cache.has(id)) {
-      const response = await fetch(`/worlds/${id}.bin`, { signal: this.abort.signal });
-      if (!response.ok) throw new Error('点云资源加载失败，请检查本地服务。');
+      const response = await fetch(asset.url, { signal: this.abort.signal });
+      if (!response.ok) throw new Error('点云资源加载失败，请稍后重试。');
       const data = new Float32Array(await response.arrayBuffer());
       if (this.disposed || generation !== this.loadGeneration) return;
-      if (!data.length || data.length % 8) throw new Error('点云文件为空或格式错误。');
+      if (data.length !== asset.count*8) throw new Error('点云文件不完整，请稍后重试。');
       const geometry = new THREE.BufferGeometry();
       const count = data.length / 8;
       const indices = Array.from({ length: count }, (_, i) => i);
@@ -116,35 +122,50 @@ export class WorldRenderer {
     if(this.accents)this.scene.remove(this.accents);
     if(this.trailAccents)this.accentScene.remove(this.trailAccents);
     this.world = id;
+    this.model = asset;
     this.points = new THREE.Points(this.cache.get(id), this.material);
     this.points.frustumCulled = false;
     this.scene.add(this.points);
     this.accents=new THREE.Points(this.accentCache.get(id),this.accentMaterial);this.accents.frustumCulled=false;this.scene.add(this.accents);
     this.trailAccents=new THREE.Points(this.accentCache.get(id),this.accentMaterial);this.trailAccents.frustumCulled=false;this.accentScene.add(this.trailAccents);
-    this.transition = this.reduced ? 0 : 1;
+    this.transition = 0;
     const bg = '#000000';
     this.renderer.setClearColor(bg);
-    this.dispersion=dispersionTarget(this.state.coherence,this.visual);this.effects.reset();
+    this.visual=clearSceneVisual();this.displayVisual={...this.visual,paletteMix:0};this.dispersion=0;this.effects.reset();
     this.resetCamera();
+    this.tour=scenePlayback(id,this.reduced);
     this.setDensity(this.density);
     this.ready = true;
   }
-  resetCamera() { this.effects?.reset();this.takePointerControl(); this.orbit = { x: this.world === 'sydney-opera' ? -.52 : .13, y: 0, zoom: 0 }; }
+  resetCamera() { this.effects?.reset();this.takePointerControl(); this.orbit = { x: this.model?.camera.orbit_x ?? .13, y: 0, zoom: 0 }; }
+  constrainCamera() { if(this.model)this.orbit=clampSceneOrbit(this.model,this.orbit); }
+  takeCameraControl() { this.tour?.manual();this.join=null; }
   clearGesture() { this.gesture = { mode: 'idle', strength: 0, time: 0 }; }
-  takePointerControl() { this.inputRevision++; this.clearGesture(); }
+  takePointerControl() { this.inputRevision++; this.clearGesture();this.takeCameraControl(); }
+  pauseTour() { this.tour?.pause();this.clearGesture(); }
+  resumeTour(restart=false) {
+    if(!this.tour)return;
+    this.clearGesture();this.effects.reset();
+    this.join=this.reduced?null:{from:{...this.orbit},time:0};
+    if(restart){this.tour.restart();if(this.visual.mode==='original')this.tour.autoVisual=false;}else this.tour.resume();
+  }
+  setTourVisual(enabled) { if(this.tour&&(!enabled||this.visual.mode!=='original'))this.tour.autoVisual=enabled; }
   applyGesture(command,capturedAt=performance.now()) {
     if (!this.ready || !this.active || this.drag || this.disposed) { this.clearGesture(); return; }
     if(performance.now()-capturedAt>GESTURE_MAX_AGE_MS){this.clearGesture();return;}
+    if((command.mode==='rotate'&&Math.hypot(command.dx||0,command.dy||0)>.0001)||(command.mode==='zoom'&&Math.abs(command.zoomRate||0)>.001))this.takeCameraControl();
     this.gesture = { mode: command.mode, zoomRate:command.zoomRate||0, time:capturedAt };
     if (command.mode === 'rotate') {
       this.orbit.x = THREE.MathUtils.clamp(this.orbit.x + command.dx * 3.1, -.85, .85);
       this.orbit.y = THREE.MathUtils.clamp(this.orbit.y + command.dy * 14, -3, 4);
+      this.constrainCamera();
     }
   }
-  setVisual(value) {
+  setVisual(value,{manual=true}={}) {
     const next=normalizeVisual(value);
     if(next.mode!==this.visual.mode||next.palette!==this.visual.palette)this.effects.reset();
     this.visual=next;
+    if(manual&&this.tour)this.tour.autoVisual=false;
   }
   setDensity(density) {
     this.density = density;
@@ -160,12 +181,26 @@ export class WorldRenderer {
     if (document.hidden) { this.clearGesture();this.effects.reset();return; }
     if(elapsed>.25||this.wasActive!==this.active)this.effects.reset();this.wasActive=this.active;
     if (!this.active || this.drag || now - this.gesture.time > GESTURE_MAX_AGE_MS || elapsed>.25) this.clearGesture();
-    const visual = feedbackVisual(this.visual, this.state, false, this.reduced);
-    this.orbit.zoom=integrateGestureZoom(this.orbit.zoom,this.gesture,now,elapsed,(this.camera.aspect<.8?38:29)-this.viewAttention*1.8);
+    if(this.tour&&this.tour.status!=='manual'){
+      const pose=this.tour.advance(elapsed,this.active);
+      if(this.join){
+        if(this.active&&this.tour.status==='playing'&&elapsed<=.25)this.join.time+=elapsed;
+        const p=Math.min(1,this.join.time/3),t=p*p*(3-2*p);
+        for(const key of ['x','y','zoom'])this.orbit[key]=this.join.from[key]+(pose[key]-this.join.from[key])*t;
+        if(p===1)this.join=null;
+      }else this.orbit={...pose};
+    }
+    const follow=this.tour?.autoVisual&&this.visual.mode!=='original';
+    const target=follow?{...sceneTourVisual(this.tour.time/this.tour.route.duration),mode:this.visual.mode}:this.visual;
+    this.displayVisual=blendVisual(this.displayVisual,target,this.active?dt:0);
+    const visual = feedbackVisual(this.displayVisual, this.state, false, this.reduced);
+    const baseDistance=this.model?Math.hypot(this.model.camera.position[0],this.model.camera.position[2]+4):29;
+    this.orbit.zoom=integrateGestureZoom(this.orbit.zoom,this.gesture,now,elapsed,baseDistance);
+    this.constrainCamera();
     if (this.active && !this.reduced) { this.clock += dt; this.flowTime += Math.min(elapsed,.1)*visual.speed; this.phase += dt * (this.state.HR ?? 0) / 60 * Math.PI * 2; }
     this.transition = Math.max(0, this.transition - dt * 0.65);
     const raw=this.visual.mode==='original';
-    this.dispersion=smoothVisual(this.dispersion,this.state.source === 'device' ? visual.dispersion : dispersionTarget(this.state.coherence,visual),Math.min(elapsed,.1),visual.recovery);
+    this.dispersion=smoothVisual(this.dispersion,this.state.source === 'device'||follow ? visual.dispersion : dispersionTarget(this.state.coherence,visual),this.active?Math.min(elapsed,.1):0,visual.recovery);
     this.uniforms.uTransition.value = raw?0:this.transition;
     this.uniforms.uTime.value = this.flowTime;
     this.uniforms.uOriginal.value=raw?1:0;this.uniforms.uDispersion.value=raw?0:this.dispersion;
@@ -173,7 +208,7 @@ export class WorldRenderer {
     this.uniforms.uPointScale.value=(this.density<.6?1.65:1.4)*(raw?1:visual.pointSize);
     this.uniforms.uBrightness.value=raw?1:visual.brightness;
     this.uniforms.uSaturation.value=raw?1:visual.saturation;
-    this.uniforms.uPalette.value=raw?0:{natural:0,aurora:1,ocean:2}[visual.palette];
+    this.uniforms.uPalette.value=raw?0:visual.paletteMix;
     this.uniforms.uSoftness.value=raw?0:visual.softness;
     if(this.accents)this.accents.visible=!raw;
     if(this.trailAccents)this.trailAccents.visible=!raw;
@@ -181,23 +216,17 @@ export class WorldRenderer {
     this.uniforms.uCoherence.value = this.state.coherence;
     this.uniforms.uAttention.value = raw ? .5 : this.state.source === 'device' ? .5 + visual.eegMix * ((this.state.attentionControl ?? .5) - .5) : this.state.attention;
     this.uniforms.uPulse.value = this.state.HR == null || this.reduced ? 0 : Math.sin(this.phase);
-    const blend = 1 - Math.exp(-dt * 8);
-    const drift = this.state.source !== 'device' && this.active && !this.reduced && !this.coarse ? Math.sin(this.clock * 0.055) * 0.025 : 0;
-    if (!['rotate', 'zoom'].includes(this.gesture.mode) && !this.drag) {
-      this.viewDrift += (drift - this.viewDrift) * blend;
-
-    }
-    const angle = this.orbit.x + (this.state.source === 'device' ? 0 : this.viewDrift);
-    const distance = (this.camera.aspect < .8 ? 38 : 29) + this.orbit.zoom - this.viewAttention * 1.8;
-    this.camera.position.set(Math.sin(angle) * distance, (this.world === 'colosseum' || this.world === 'grand-canyon' ? 13 : 8) + this.orbit.y, Math.cos(angle) * distance - 4);
-    this.camera.lookAt(0, this.world === 'abyss' ? 3 : this.world === 'eiffel' ? 5.5 : 3.6, -5);
+    const angle = this.orbit.x;
+    const distance = baseDistance + this.orbit.zoom;
+    this.camera.position.set(Math.sin(angle) * distance, (this.model?.camera.position[1]??8) + this.orbit.y, Math.cos(angle) * distance - 4);
+    this.camera.lookAt(...(this.model?.camera.target??[0,3.6,-5]));
     this.uniforms.uFocus.value=this.camera.position.distanceTo(new THREE.Vector3(0,4,-5));
     const moving=!!this.drag||this.camera.position.distanceTo(this.previousCamera)/Math.max(dt,.001)>1.2;
     this.previousCamera.copy(this.camera.position);
     this.effects.render(elapsed,visual,{moving,reduced:this.reduced,active:this.active,coarse:this.coarse});
     this.frames++;
     if (now - this.lastStats > 1000) {
-      this.onStats({ fps: Math.round(this.frames * 1000 / (now - this.lastStats)), points: this.count || 0 });
+      this.onStats({ fps: Math.round(this.frames * 1000 / (now - this.lastStats)), points: this.count || 0, tour:this.tour?.snapshot() });
       this.frames = 0; this.lastStats = now;
     }
   }

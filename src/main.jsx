@@ -34,6 +34,7 @@ import { GlobeHemisphereEast } from '@phosphor-icons/react/dist/csr/GlobeHemisph
 import { GestureControls } from './GestureControls';
 import { VisualControls } from './VisualControls';
 import { GeoControls } from './GeoControls';
+import { SceneTourControls } from './SceneTourControls';
 import { GEO_WORLDS } from './core/geo-navigation.mjs';
 import { RiverineHero } from './riverine/RiverineHero';
 import './riverine/theme.css';
@@ -73,7 +74,7 @@ function Trace({ history, compact = false }) {
 }
 
 function App() {
-  const [world, setWorld] = useState('abyss');
+  const [world, setWorld] = useState('scene-01');
   const [stage, setStage] = useState('connect');
   const [selectedId, setSelectedId] = useState(null);
   const [recommendations, setRecommendations] = useState(() => chooseWorld('', DEFAULT_FRAME));
@@ -288,7 +289,8 @@ function App() {
           <button className="icon-button glass" aria-label={immersive ? '退出沉浸模式' : '进入沉浸模式'} title="沉浸模式 (F)" onClick={() => setImmersive(v => !v)}>{immersive ? <ArrowsIn size={18}/> : <ArrowsOut size={18}/>}</button>
         </div>
         <GeoControls engine={engine} ready={loaded} world={world} stats={stats.geo} paused={paused}/>
-        <VisualControls key={`visual-${world}`} engine={engine} ready={loaded} world={world} tour={stats.geo?.tour}/>
+        <SceneTourControls engine={engine} ready={loaded} world={world} stats={stats.tour} paused={paused}/>
+        <VisualControls key={`visual-${world}`} engine={engine} ready={loaded} world={world} tour={stats.geo?.tour||stats.tour}/>
         <GestureControls engine={engine} paused={paused} world={world} ready={loaded}/>
         {!loaded && !error && <div className="scene-message"><CircleNotch className="spin" size={27}/><span>正在构建{currentWorld.name}…</span><small>让每一个微粒找到自己的位置</small></div>}
         {error && <div className="scene-message error" role="alert"><span>{error}</span><button className="primary" onClick={() => location.reload()}>重新加载</button></div>}
@@ -324,11 +326,11 @@ function App() {
       </div></dialog>
     </main>
 
-    {stage !== 'connect' && <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.09.1</span></div></footer>}
+    {stage !== 'connect' && <footer className="bottom-bar"><span className="brand-motto">YOUR MIND SHAPES THIS WORLD.</span><div className="playback"><button onClick={() => setPaused(v => !v)} aria-label={paused ? '继续体验' : '暂停体验'}>{paused ? <Play size={13} weight="fill"/> : <Pause size={13} weight="fill"/>}</button><span>{Math.floor(elapsed / 60).toString().padStart(2, '0')}:{Math.floor(elapsed % 60).toString().padStart(2, '0')}</span><i/><span>{stage === 'transform' ? journey : stageNames[stageIndex] + ' · 地球入口'}</span>{mode === 'demo' && <div className="demo-progress"><span style={{ transform: `scaleX(${demoElapsed / 60})` }}/></div>}</div><div className="render-quality"><label htmlFor="quality">画质</label><select id="quality" value={quality} onChange={e => setQuality(Number(e.target.value))}><option value={1}>精细</option><option value={0.45}>流畅</option></select><span className="version">V.10.0</span></div></footer>}
     <div className="sr-only" role="status" aria-live="polite">{stage === 'transform' ? `${currentWorld.name}。${status}。` : ''}</div>
     {toast && <div className="toast" role="status"><Check size={15}/>{toast}</div>}
 
-    <dialog ref={dialog} className="help-dialog" onCancel={() => setHelp(false)} onClick={e => { if (e.target === dialog.current) setHelp(false); }}><div className="dialog-content"><button className="icon-button close-dialog" aria-label="关闭说明" onClick={() => setHelp(false)}><X size={20}/></button><div className="eyebrow">A WORLD WITHIN YOU</div><h2>用呼吸，让世界归位。</h2><p>从连接与表达心情开始，在三维地球上探索遍布世界的 12 个地点。推荐只提供方向，点击地点并确认后才会飞入世界；随时可返回地球。富士山与大峡谷使用真实地理数据，可平移探索、跳转地标和查看来源；其余地点为原创主题点云。</p><p>进入任意点云场景后，调节模拟器，亲眼看见点云从漂散回到原位。也可以开启 60 秒旅程，跟随吸气 4 秒、呼气 6 秒的节奏。</p><div className="help-mappings"><span>放松度 → 世界聚散</span><span>专注度 → 限幅亮度</span><span>心率（可选）→ 微脉动</span><span>信号不足 → 保持上次状态</span></div><h3>调出你的光影</h3><p>进入场景后，打开「视觉调节」，选择清晰、流光或梦境。可对照原始点云、粒子流动和完整光影，调节粒子尺寸、聚散、光晕与余辉。更多细节中可以改变流动速度和色彩。转动镜头时余辉会收起，让主体保持清楚。</p><h3>用手轻触世界</h3><p>在场景中开启手势并允许摄像头，仅识别一只手。张开手掌或握拳后移动手，镜头跟随移动；拇指食指捏住后，上移持续放大、下移持续缩小；离中点越远速度越快，回到中点暂停，松开立即停止。其余手指自然舒展，再次捏合会以当前位置重新设定中点。切换手型时请稍停片刻。摄像头画面由本机 MediaPipe 处理，不上传。关闭手势或返回地球会释放摄像头。鼠标与触摸可以随时接管；将手移出画面再放回，即可恢复手势。</p><h3>连接自己的设备</h3><p>运行 <code>npm run eeg</code>，在本页「设备接入」复制配置，到本地 EEG Studio 的「连接 Mindscape」粘贴并开始联动。唯一协议为 <code>mindscape.eeg.v2</code>，配置有效期 24 小时。约每秒真实更新一次，不补发历史值。原始字节与频段保留在本地。</p><p>专注与冥想为相对分，0 表示无效；无心率显示未接入。个人校准至少 30 秒及每项 25 个独立样本，最多 60 秒，暂停和隐藏页面不计时。接触不良或字段 2.5 秒未更新时保持对应氛围；离线 10 秒暂停联动。镜头保持手动或单手控制。</p><h3>关于这个 demo</h3><p>富士山山顶使用静冈县实测点云，外围及大峡谷由真实高程构建地形点云，并按视距分层加载；其余 10 个世界为原创程序点云。所有场景均非 3DGS。{backend === 'cloudflare' ? '主题推荐通过 Cloudflare AI Gateway 调用模型，仅发送主动提交的心意文字，不发送脑电或心率指标；不可用时明确回退到本地规则。' : '主题选择使用本地规则，未调用 AI。'}契合分用于体验排序，不是健康评估；语音使用浏览器识别能力，支持情况因浏览器而异。环境音由本地 Web Audio 实时合成。</p><div className="keyboard-help"><span><kbd>Space</kbd> 暂停 / 继续</span><span><kbd>F</kbd> 沉浸模式</span><span><kbd>Esc</kbd> 退出</span></div><button className="primary" onClick={() => setHelp(false)}>开始探索 <ArrowRight size={16}/></button></div></dialog>
+    <dialog ref={dialog} className="help-dialog" onCancel={() => setHelp(false)} onClick={e => { if (e.target === dialog.current) setHelp(false); }}><div className="dialog-content"><button className="icon-button close-dialog" aria-label="关闭说明" onClick={() => setHelp(false)}><X size={20}/></button><div className="eyebrow">A WORLD WITHIN YOU</div><h2>用呼吸，让世界归位。</h2><p>从连接与表达心情开始，在三维地球上探索遍布世界的 {LOCATIONS.length} 个地点。推荐只提供方向，点击地点并确认后才会飞入世界；随时可返回地球。富士山与大峡谷使用真实地理数据，可平移探索、跳转地标和查看来源；其余 20 处为图像重建场景，地球位置为灵感地点。它们各有 48–72 秒的微光导览，侧重粒子、色彩与小幅镜头探索。</p><p>进入任意点云场景后，调节模拟器，亲眼看见点云从漂散回到原位。也可以开启 60 秒旅程，跟随吸气 4 秒、呼气 6 秒的节奏。</p><div className="help-mappings"><span>放松度 → 世界聚散</span><span>专注度 → 限幅亮度</span><span>心率（可选）→ 微脉动</span><span>信号不足 → 保持上次状态</span></div><h3>调出你的光影</h3><p>进入场景后，打开「视觉调节」，选择清晰、流光或梦境。可对照原始点云、粒子流动和完整光影，调节粒子尺寸、聚散、光晕与余辉。更多细节中可以改变流动速度和色彩。转动镜头时余辉会收起，让主体保持清楚。</p><h3>用手轻触世界</h3><p>在场景中开启手势并允许摄像头，仅识别一只手。张开手掌或握拳后移动手，镜头跟随移动；拇指食指捏住后，上移持续放大、下移持续缩小；离中点越远速度越快，回到中点暂停，松开立即停止。其余手指自然舒展，再次捏合会以当前位置重新设定中点。切换手型时请稍停片刻。摄像头画面由本机 MediaPipe 处理，不上传。关闭手势或返回地球会释放摄像头。鼠标与触摸可以随时接管；将手移出画面再放回，即可恢复手势。</p><h3>连接自己的设备</h3><p>运行 <code>npm run eeg</code>，在本页「设备接入」复制配置，到本地 EEG Studio 的「连接 Mindscape」粘贴并开始联动。唯一协议为 <code>mindscape.eeg.v2</code>，配置有效期 24 小时。约每秒真实更新一次，不补发历史值。原始字节与频段保留在本地。</p><p>专注与冥想为相对分，0 表示无效；无心率显示未接入。个人校准至少 30 秒及每项 25 个独立样本，最多 60 秒，暂停和隐藏页面不计时。接触不良或字段 2.5 秒未更新时保持对应氛围；离线 10 秒暂停联动。镜头保持手动或单手控制。</p><h3>关于这个 demo</h3><p>富士山山顶使用静冈县实测点云，外围及大峡谷由真实高程构建地形点云，并按视距分层加载；其余 20 个世界由用户提供的图像 / 视频重建模型转换为普通点云；地点是按画面主题选定的灵感坐标，不代表采集地点或真实米制测量。当前渲染使用普通粒子，适合正面和小范围移动。{backend === 'cloudflare' ? '主题推荐通过 Cloudflare AI Gateway 调用模型，仅发送主动提交的心意文字，不发送脑电或心率指标；不可用时明确回退到本地规则。' : '主题选择使用本地规则，未调用 AI。'}契合分用于体验排序，不是健康评估；语音使用浏览器识别能力，支持情况因浏览器而异。环境音由本地 Web Audio 实时合成。</p><div className="keyboard-help"><span><kbd>Space</kbd> 暂停 / 继续</span><span><kbd>F</kbd> 沉浸模式</span><span><kbd>Esc</kbd> 退出</span></div><button className="primary" onClick={() => setHelp(false)}>开始探索 <ArrowRight size={16}/></button></div></dialog>
   </div>;
 }
 

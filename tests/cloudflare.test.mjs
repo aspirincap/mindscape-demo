@@ -23,24 +23,24 @@ test('API body reader bounds actual streamed bytes', async () => {
   assert.throws(() => routeInput({ text: '森林', frame: { relaxation: 3 } }));
 });
 
-test('model output only permits the twelve available worlds and bounded values', () => {
-  const result = normalizeRecommendation({ response: '{"world":"forest","score":92,"reason":"沿着林间微光慢慢放松。"}' }, 'test-model');
+test('model output only permits the 22 available worlds and bounded values', () => {
+  const result = normalizeRecommendation({ response: '{"world":"scene-02","score":92,"reason":"沿着林间微光慢慢放松。"}' }, 'test-model');
   assert.equal(result.mode, 'ai-gateway');
-  assert.equal(result.recommendedWorlds.length, 12);
-  assert.equal(result.recommendedWorlds[0].worldId, 'forest');
-  for (const l of LOCATIONS) { const r=normalizeRecommendation({world:l.worldId,score:94,reason:'出发吧。'});assert.equal(r.recommendedWorlds[0].locationId,l.id);assert.equal(new Set(r.recommendedWorlds.map(x=>x.worldId)).size,12); }
-  const glm = normalizeRecommendation({ choices: [{ message: { content: '{"world":"abyss","score":90,"reason":"在水下的静谧中慢慢放松。"}', reasoning_content: 'This internal reasoning must never become the recommendation.' }, finish_reason: 'stop' }] }, '@cf/zai-org/glm-5.3-flash');
-  assert.equal(glm.world, 'abyss');
+  assert.equal(result.recommendedWorlds.length, 22);
+  assert.equal(result.recommendedWorlds[0].worldId, 'scene-02');
+  for (const l of LOCATIONS) { const r=normalizeRecommendation({world:l.worldId,score:94,reason:'出发吧。'});assert.equal(r.recommendedWorlds[0].locationId,l.id);assert.equal(new Set(r.recommendedWorlds.map(x=>x.worldId)).size,22); }
+  const glm = normalizeRecommendation({ choices: [{ message: { content: '{"world":"scene-01","score":90,"reason":"在水下的静谧中慢慢放松。"}', reasoning_content: 'This internal reasoning must never become the recommendation.' }, finish_reason: 'stop' }] }, '@cf/zai-org/glm-5.3-flash');
+  assert.equal(glm.world, 'scene-01');
   assert.equal(glm.reason, '在水下的静谧中慢慢放松。');
   assert.equal(glm.model, '@cf/zai-org/glm-5.3-flash');
-  for (const invalid of [{ world: 'paris', score: 90, reason: 'hi' }, { world: 'forest', score: 999, reason: 'hi' }, { world: 'forest', score: 90, reason: '' }]) assert.throws(() => normalizeRecommendation(invalid));
+  for (const invalid of [{ world: 'paris', score: 90, reason: 'hi' }, { world: 'scene-02', score: 999, reason: 'hi' }, { world: 'scene-02', score: 90, reason: '' }]) assert.throws(() => normalizeRecommendation(invalid));
 });
 
 test('AI request uses the gateway, omits raw sensor data, and labels fallback honestly', async () => {
   const input = routeInput({ text: '想去森林' });
   let called;
   const env = { AI_GATEWAY_ID: 'mindscape-demo', AI_MODEL: '@cf/zai-org/glm-5.3-flash', AI: { run: async (...args) => {
-    called = args; return { choices: [{ message: { content: '{"world":"forest","score":91,"reason":"林间微光陪你慢慢安定。"}' } }] };
+    called = args; return { choices: [{ message: { content: '{"world":"scene-02","score":91,"reason":"林间微光陪你慢慢安定。"}' } }] };
   } } };
   assert.equal((await recommend(input, env)).mode, 'ai-gateway');
   assert.equal(called[0], env.AI_MODEL);

@@ -1,4 +1,5 @@
 import { terrainResponse } from './terrain.mjs';
+import { sceneResponse } from './scenes.mjs';
 import { DurableObject } from 'cloudflare:workers';
 import { LOCATIONS } from '../src/core/locations.mjs';
 import { EEG_PROTOCOL, EEGError } from '../src/core/eeg-protocol.mjs';
@@ -9,10 +10,10 @@ import { recommend, routeInput, fallback } from './recommend.mjs';
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url), path = url.pathname;
-    if (path.startsWith('/terrain-data/')) {
+    if (path.startsWith('/terrain-data/') || path.startsWith('/scene-data/')) {
       const cache = caches.default;
       if (request.method === 'GET') { const cached = await cache.match(request); if (cached) return cached; }
-      const response = await terrainResponse(request, env.TERRAIN);
+      const response = await (path.startsWith('/scene-data/') ? sceneResponse : terrainResponse)(request, env.TERRAIN);
       if (response.ok && request.method === 'GET') ctx.waitUntil(cache.put(request, response.clone()));
       return response;
     }

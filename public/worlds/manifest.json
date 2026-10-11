@@ -1,98 +1,154 @@
 [
   {
-    "id": "abyss",
-    "count": 195160,
-    "bytes": 6245120,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural point cloud",
-    "file": "abyss.bin"
-  },
-  {
-    "id": "forest",
-    "count": 280050,
-    "bytes": 8961600,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural point cloud",
-    "file": "forest.bin"
-  },
-  {
-    "id": "great-wall",
-    "count": 105680,
-    "bytes": 3381760,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "great-wall.bin"
-  },
-  {
     "id": "fuji",
-    "count": 127555,
-    "bytes": 4081760,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "fuji.bin"
-  },
-  {
-    "id": "eiffel",
-    "count": 111640,
-    "bytes": 3572480,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "eiffel.bin"
-  },
-  {
-    "id": "colosseum",
-    "count": 186600,
-    "bytes": 5971200,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "colosseum.bin"
-  },
-  {
-    "id": "giza",
-    "count": 122000,
-    "bytes": 3904000,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "giza.bin"
-  },
-  {
-    "id": "taj-mahal",
-    "count": 119164,
-    "bytes": 3813248,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "taj-mahal.bin"
-  },
-  {
-    "id": "machu-picchu",
-    "count": 119002,
-    "bytes": 3808064,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "machu-picchu.bin"
+    "count": 5115778,
+    "kind": "geographic",
+    "url": "/terrain/fuji/manifest.json"
   },
   {
     "id": "grand-canyon",
-    "count": 148000,
-    "bytes": 4736000,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "grand-canyon.bin"
+    "count": 4194304,
+    "kind": "geographic",
+    "url": "/terrain/grand-canyon/manifest.json"
   },
   {
-    "id": "sydney-opera",
-    "count": 139950,
-    "bytes": 4478400,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "sydney-opera.bin"
+    "id": "scene-01",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-01/88af367ce8c4f617.bin",
+    "sha256": "88af367ce8c4f61702cdfb885a950e5192498bc23b8995075d742d959a24dcc5"
   },
   {
-    "id": "iguazu",
-    "count": 121000,
-    "bytes": 3872000,
-    "format": "xyz-rgb-size-motion / float32",
-    "origin": "original procedural landmark interpretation, not a scan",
-    "file": "iguazu.bin"
+    "id": "scene-02",
+    "count": 387650,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-02/4d29ffae4f13f539.bin",
+    "sha256": "4d29ffae4f13f539be2d3a6a32ab81314489db5a40ae8d47555f5c6daaf2e1db"
+  },
+  {
+    "id": "scene-03",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-03/60e6ed88a933ddcf.bin",
+    "sha256": "60e6ed88a933ddcf3b30921e4de8c8ab59093e47894caedcd4e5620bf42845a6"
+  },
+  {
+    "id": "scene-04",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-04/1b39e25d93545033.bin",
+    "sha256": "1b39e25d9354503349331a865ace5bfbbf1000fd379b368db04e9279646f4167"
+  },
+  {
+    "id": "scene-05",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-05/24397b263295bd48.bin",
+    "sha256": "24397b263295bd4813e30ef75eb7e5cf9eb91448bee37c8197f5e62b14329324"
+  },
+  {
+    "id": "scene-06",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-06/8f2dbf5114eac3d9.bin",
+    "sha256": "8f2dbf5114eac3d96695b5bb8586696c9ea5308d9e8bdc4dbfacb641eb7557ac"
+  },
+  {
+    "id": "scene-07",
+    "count": 399157,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-07/4024414ec21690cf.bin",
+    "sha256": "4024414ec21690cf14e1de87899c182d2834492db79882746770f395b1402040"
+  },
+  {
+    "id": "scene-08",
+    "count": 398773,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-08/3ec92137b6012885.bin",
+    "sha256": "3ec92137b60128855c263784e4590ef4b0ea80c71b5564bdea652f584785b5cf"
+  },
+  {
+    "id": "scene-09",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-09/3ea0e573c3239005.bin",
+    "sha256": "3ea0e573c3239005eda533880eebb1b104d493845c78263ecb369542c2f193aa"
+  },
+  {
+    "id": "scene-10",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-10/d7fa229ef16d5eb3.bin",
+    "sha256": "d7fa229ef16d5eb311b1370126b58e566b7340f3100ec1d91530c65deddae524"
+  },
+  {
+    "id": "scene-11",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-11/cb96f58b28b077f5.bin",
+    "sha256": "cb96f58b28b077f5ce6c91492f140e7a7c3b46392a463c4acc0875e71bbd3ffb"
+  },
+  {
+    "id": "scene-12",
+    "count": 383173,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-12/5bd2c4eac32f09fc.bin",
+    "sha256": "5bd2c4eac32f09fc67a76a524f1ec07fddf623184b854ddb255863462c6348bd"
+  },
+  {
+    "id": "scene-13",
+    "count": 394073,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-13/eb58f8a4b366274c.bin",
+    "sha256": "eb58f8a4b366274ce80eed24abefb20509e83bce7ff7ec5668f1c9c3de55cac9"
+  },
+  {
+    "id": "scene-14",
+    "count": 287048,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-14/ba7757020a08bec7.bin",
+    "sha256": "ba7757020a08bec71d76e61f9a3d8391f2a4827f0867aeecf6fc22d9bc4b170e"
+  },
+  {
+    "id": "scene-15",
+    "count": 281463,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-15/caf76a3ad0d838eb.bin",
+    "sha256": "caf76a3ad0d838eb110863da8e6b70d50e0d060111cf7658f918559398e3e34f"
+  },
+  {
+    "id": "scene-16",
+    "count": 398929,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-16/a170d19b2f4ab262.bin",
+    "sha256": "a170d19b2f4ab262a7b235f0135e8969a50a3e82a3002fc5bc90089af4c788f1"
+  },
+  {
+    "id": "scene-17",
+    "count": 311264,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-17/2cc8e385408a5bc8.bin",
+    "sha256": "2cc8e385408a5bc8f8729f8b1697c829852feb80b1c1ba9786ae0d131ca1ecd5"
+  },
+  {
+    "id": "scene-18",
+    "count": 391222,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-18/a5db0c66499fdcd4.bin",
+    "sha256": "a5db0c66499fdcd48d6acb6de4f9b232cd702cc23c903de3117c009f54dc662d"
+  },
+  {
+    "id": "scene-19",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-19/fa9207bc55f11cdb.bin",
+    "sha256": "fa9207bc55f11cdb476c1851110dd00b8d13b5a36ce17167172b72f9f3ef69f9"
+  },
+  {
+    "id": "scene-20",
+    "count": 400000,
+    "kind": "image-scene",
+    "url": "/scene-data/scene-20/1f32965d4b9ec9a6.bin",
+    "sha256": "1f32965d4b9ec9a6b22e1950b8578fdcb2cc65fa2839e5a7fd00c3fd5aa701c8"
   }
 ]

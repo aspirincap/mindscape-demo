@@ -38,8 +38,8 @@ try {
   await page.getByRole('button', { name: '模拟器', exact: true }).click(); await page.getByRole('button', { name: '设备接入', exact: true }).click(); assert.equal(await page.getByTestId('eeg-attention').innerText(), '—');
   dataTimer = setInterval(() => send(), 1050); await pause(4200); await page.getByRole('button', { name: '开始脑电氛围', exact: true }).click();
   await page.getByRole('button', { name: '关闭共鸣面板', exact: true }).click();
-  await page.getByRole('link', { name: '直接探索 12 个世界', exact: true }).click();
-  for (const name of ['富士山', '大峡谷', '帕劳']) {
+  await page.getByRole('link', { name: '直接探索 22 个世界', exact: true }).click();
+  for (const name of ['富士山', '大峡谷', '墨宝']) {
     await page.getByRole('button', { name: `选择目的地：${name}`, exact: true }).click(); await page.getByRole('button', { name: `进入${name}`, exact: true }).click();
     await page.getByRole('button', { name: /开启手势/ }).waitFor({ timeout: 60000 });
     await page.getByRole('button', { name: '调节共鸣', exact: true }).click();
