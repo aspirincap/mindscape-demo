@@ -8,7 +8,7 @@ export function pairingConfig(input) {
   let ws, http;
   try { ws = new URL(data.websocket); http = new URL(data.http); } catch { throw new Error('接入地址格式错误'); }
   const cloud = ws.origin === 'wss://mindscape-demo.aspirincap.workers.dev';
-  const local = ws.protocol === 'ws:' && ['127.0.0.1', 'localhost'].includes(ws.hostname) && ['5173', '5174', '5178', '5186', '8787'].includes(ws.port);
+  const local = ws.protocol === 'ws:' && ['127.0.0.1', 'localhost'].includes(ws.hostname) && ['5173', '5174', '5178', '5186', '5190', '8787'].includes(ws.port);
   if (!(cloud || local) || ws.pathname !== '/ws' || ws.search !== '?role=device' || ws.hash || ws.username || ws.password || http.origin !== ws.origin.replace(/^ws/, 'http') || http.pathname !== '/api/frame' || http.search || http.hash || http.username || http.password) throw new Error('仅允许本项目云端或指定回环开发地址');
   const token = data.authorization?.match(/^Bearer (.+)$/)?.[1];
   if (typeof token !== 'string' || !/^\d{13}\.[a-f0-9]{64}$/.test(token) || data.expiresAt !== Number(token.split('.')[0]) + 86400000) throw new Error('配对已过期或凭据无效，请重新复制配置');

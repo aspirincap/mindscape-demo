@@ -85,6 +85,19 @@ try {
   else assert.ok(['ai-gateway', 'local-rules'].includes(route.mode));
   if (process.env.EXPECTED_AI_MODEL) { assert.equal(route.mode, 'ai-gateway'); assert.equal(route.model, process.env.EXPECTED_AI_MODEL); assert.equal(health.model, process.env.EXPECTED_AI_MODEL); }
   record(`recommendation contract: ${route.mode}${route.fallback ? ' / ' + route.fallback : ''}`);
+  const assessment = { version: 1, answers: { feeling: 'tired', energy: 'low', attention: 'scattered', wish: 'rest', landscape: 'forest' } };
+  assert.equal((await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ assessment, frame }) })).status, 400);
+  assert.equal((await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ assessment: { ...assessment, answers: {} } }) })).status, 400);
+  const checkInResponse = await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: JSON.stringify({ assessment }) });
+  assert.equal(checkInResponse.status, 200);
+  const checkIn = await checkInResponse.json();
+  assert.equal(checkIn.kind, 'assessment'); assert.equal(checkIn.choices.length, 3);
+  assert.equal(checkIn.choices.filter(c => c.worldId === 'scene-04').length, 1);
+  assert.equal(new Set(checkIn.choices.map(c => c.locationId)).size, 3);
+  assert.equal(checkIn.recommendedWorlds.length, 22);
+  for (const c of checkIn.choices) { assert.ok(LOCATIONS.some(l => l.id === c.locationId)); assert.ok([...c.reason].length >= 24 && [...c.reason].length <= 40); }
+  if (process.env.REQUIRE_AI === '1') assert.equal(checkIn.mode, 'ai-gateway');
+  record(`five-answer recommendations and device-data rejection: ${checkIn.mode}`);
   if (mf) {
     let limited;
     for (let i = 0; i < 6; i++) limited = await (await fetch(`${base}/api/route`, { method: 'POST', headers: a.headers, body: '{"text":"森林"}' })).json();

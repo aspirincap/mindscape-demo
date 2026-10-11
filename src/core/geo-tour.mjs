@@ -67,16 +67,20 @@ export function buildTour(meta, heights) {
 }
 
 export class TourPlayback {
-  constructor(route, reduced = false) { this.route = route; this.time = 0; this.status = reduced ? 'paused' : 'playing'; this.autoVisual = true; }
+  constructor(route, reduced = false) { this.route = route; this.time = 0; this.playedSeconds = 0; this.status = reduced ? 'paused' : 'playing'; this.autoVisual = true; }
   advance(dt, active = true, hidden = false) {
-    if (this.status === 'playing' && active && !hidden && dt >= 0 && dt <= .25) this.time = mod(this.time + dt, this.route.duration);
+    if (this.status === 'playing' && active && !hidden && dt >= 0 && dt <= .25) {
+      this.time = mod(this.time + dt, this.route.duration);
+      // Per-visit playback time survives route loops and restarts, but excludes pauses and hidden gaps.
+      this.playedSeconds += dt;
+    }
     return this.route.pose(this.time);
   }
   pause() { if (this.status === 'playing') this.status = 'paused'; }
   resume() { this.status = 'playing'; }
   manual() { this.status = 'manual'; }
   restart() { this.time = 0; this.status = 'playing'; this.autoVisual = true; }
-  snapshot() { return { status: this.status, progress: this.time / this.route.duration, elapsed: this.time, duration: this.route.duration, name: this.route.name, chapter: this.route.chapters[Math.min(3, Math.floor(this.time / this.route.duration * 4))], autoVisual: this.autoVisual }; }
+  snapshot() { return { status: this.status, progress: this.time / this.route.duration, elapsed: this.time, playedSeconds: this.playedSeconds, duration: this.route.duration, name: this.route.name, chapter: this.route.chapters[Math.min(3, Math.floor(this.time / this.route.duration * 4))], autoVisual: this.autoVisual }; }
 }
 
 export function tourVisual(progress) {

@@ -1,0 +1,8 @@
+.scene-eeg-scores{position:absolute;left:0;bottom:44px;max-width:100%;color:#ecf1ef}
+.scene-eeg-values{display:flex;align-items:baseline;gap:28px;margin:0}
+.scene-eeg-values>div{display:flex;align-items:baseline;gap:9px}
+.scene-eeg-values dt{color:#a7bab7;font-size:12px;font-weight:400;white-space:nowrap}
+.scene-eeg-values dd{min-width:3ch;margin:0;font-size:30px;font-weight:300;line-height:1.2;font-variant-numeric:tabular-nums}
+.scene-eeg-scores .scene-eeg-breath{margin:8px 0 0;font-size:11px;line-height:1.6;color:#a7bab7;font-weight:400}
+.immersive .scene-eeg-scores{display:none}
+@media(max-width:760px){.scene-eeg-scores{bottom:55px}.scene-eeg-values{gap:20px}.scene-eeg-values>div{gap:7px}.scene-eeg-values dt{font-size:11px}.scene-eeg-values dd{font-size:26px}}

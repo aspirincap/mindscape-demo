@@ -32,7 +32,25 @@ for (const id of ['fuji', 'grand-canyon']) test(`${id}: complete flight stays ab
   playback.resume(); playback.advance(.1, false); playback.advance(.1, true, true); assert.equal(playback.time, .1);
   playback.manual(); playback.advance(.1); assert.equal(playback.time, .1);
   playback.restart(); assert.equal(playback.time, 0); assert.equal(playback.status, 'playing');
+  assert.equal(playback.snapshot().playedSeconds, .1);
   assert.equal(new TourPlayback(route, true).status, 'paused');
+});
+
+test('visit playback clock counts only active tour frames and survives route loops and restarts', () => {
+  const route = { duration: 2, name: 'Clock test', chapters: ['A', 'B', 'C', 'D'], pose: time => time };
+  const tour = new TourPlayback(route, true);
+  tour.advance(.25); assert.equal(tour.snapshot().playedSeconds, 0);
+  tour.resume();
+  for (let i = 0; i < 12; i++) tour.advance(.25);
+  assert.equal(tour.time, 1); assert.equal(tour.snapshot().playedSeconds, 3);
+  tour.pause(); tour.advance(.25);
+  tour.manual(); tour.advance(.25);
+  tour.resume(); tour.advance(.25, false); tour.advance(.25, true, true);
+  for (const dt of [-1, .26, 60, NaN, Infinity]) tour.advance(dt);
+  assert.equal(tour.snapshot().playedSeconds, 3);
+  tour.restart(); assert.equal(tour.time, 0);
+  tour.advance(.25); assert.equal(tour.snapshot().playedSeconds, 3.25);
+  assert.equal(new TourPlayback(route).snapshot().playedSeconds, 0);
 });
 
 test('tour starts clear, colour and light change continuously and preserve the manual baseline', () => {

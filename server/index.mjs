@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { EEG_PROTOCOL, EEGError } from '../src/core/eeg-protocol.mjs';
 import { EEGSession } from '../worker/eeg-session.mjs';
 import { COOKIE, SESSION_MS, validToken } from '../worker/common.mjs';
-import { routeInput } from '../worker/recommend.mjs';
+import { routeInput, fallback, recommend } from '../worker/recommend.mjs';
+import { previewBudget, createPreviewAI } from './ai-preview.mjs';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { parseTerrainTile } from '../src/core/terrain-format.mjs';
@@ -11,7 +12,6 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer, WebSocket } from 'ws';
-import { chooseWorld } from '../src/core/state.mjs';
 import { LOCATIONS } from '../src/core/locations.mjs';
 import { sceneAssetForPath } from '../src/core/scene-assets.mjs';
 
@@ -19,6 +19,14 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const port = Number(process.env.PORT || 5173);
 const prod = process.env.NODE_ENV === 'production';
 let vite = null;
+let aiPreview = null;
+const consumePreview = previewBudget();
+if (process.env.AI_GATEWAY_DEV === '1') {
+  try {
+    aiPreview = await createPreviewAI(root);
+  } catch { console.warn('AI Gateway 本地接入未就绪，使用本地规则。'); }
+}
+const router = aiPreview ? 'ai-gateway' : 'local-rules';
 const mime = { '.mp3': 'audio/mpeg', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.geojson': 'application/geo+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.bin': 'application/octet-stream', '.ply': 'application/octet-stream', '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.task': 'application/octet-stream' };
 const sessions = new Map();
 function tokenFor(req) {
@@ -70,15 +78,18 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/session' && req.method === 'GET') {
       const current = token || `${Date.now()}.${randomUUID().replaceAll('-', '')}${randomUUID().replaceAll('-', '')}`;
       res.setHeader('Set-Cookie', `${COOKIE}=${current}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.max(0, Math.floor((Number(current.split('.')[0]) + SESSION_MS - Date.now()) / 1000))}`);
-      return json(res, 200, { backend: 'local', router: 'local-rules', protocol: EEG_PROTOCOL, token: current, expiresAt: Number(current.split('.')[0]) + SESSION_MS });
+      return json(res, 200, { backend: 'local', router, protocol: EEG_PROTOCOL, token: current, expiresAt: Number(current.split('.')[0]) + SESSION_MS });
     }
-    if (url.pathname === '/api/health') return json(res, 200, { ok: true, worlds: LOCATIONS.map(l => l.worldId), ...(token ? relayFor(token).health() : { sensorFresh: false }), router: 'local-rules' });
+    if (url.pathname === '/api/health') return json(res, 200, { ok: true, worlds: LOCATIONS.map(l => l.worldId), ...(token ? relayFor(token).health() : { sensorFresh: false }), router });
     if (url.pathname === '/api/locations') return json(res, 200, { locations: LOCATIONS });
     if (['/api/frame', '/api/eeg/lease', '/api/route'].includes(url.pathname)) {
       if (!token) return json(res, 401, { error: '请先初始化会话或携带配对凭据' });
       if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
       const data = await body(req);
-      if (url.pathname === '/api/route') { const input = routeInput(data); return json(res, 200, chooseWorld(input.text)); }
+      if (url.pathname === '/api/route') {
+        const input = routeInput(data);
+        return json(res, 200, !aiPreview ? fallback(input, 'local-development') : !consumePreview() ? fallback(input, 'rate-limited') : await recommend(input, aiPreview.env));
+      }
       if (!req.headers.authorization) return json(res, 401, { error: '设备发送须携带 Authorization' });
       if (data.protocol !== EEG_PROTOCOL) throw new EEGError(`请更新客户端至 ${EEG_PROTOCOL}`, 'PROTOCOL_MISMATCH');
       const relay = relayFor(token);
@@ -117,5 +128,5 @@ server.on('upgrade', (req, socket, head) => {
 const timer = setInterval(() => { for (const [token, relay] of sessions) { relay.expire(); if (!validToken(token)) sessions.delete(token); } }, 1000);
 if (!prod) vite = await (await import('vite')).createServer({ root, server: { middlewareMode: true, hmr: { server, host: '127.0.0.1' } }, appType: 'spa' });
 server.listen(port, '127.0.0.1', () => console.log(`Go Wild ready → http://127.0.0.1:${port}`));
-function shutdown() { clearInterval(timer); for (const ws of wss.clients) ws.terminate(); wss.close(); vite?.close(); server.close(() => process.exit(0)); }
+async function shutdown() { clearInterval(timer); for (const ws of wss.clients) ws.terminate(); wss.close(); await vite?.close(); await aiPreview?.dispose(); server.close(() => process.exit(0)); }
 process.on('SIGTERM', shutdown); process.on('SIGINT', shutdown);

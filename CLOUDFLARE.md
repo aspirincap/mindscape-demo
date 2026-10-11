@@ -6,7 +6,7 @@
 
 - Worker `mindscape-demo` 同时提供静态资源、推荐和 EEG 会话 API；`TERRAIN` 绑定私有 R2 桶 `mindscape-terrain`。
 - `SensorSession` 按不可猜测 token 隔离会话，仅在内存保存去重序号、时效与连接所有权，不保存 EEG 历史，也不向新浏览器重放旧数据。v2 使用普通 WebSocket 和到期检查定时器，连接存续期间不使用休眠模式；这是显式的资源取舍。
-- `AiBudget` 持久化限额计数：每 IP 每分钟 6 次、全站每分钟 20 次、每天 200 次尝试。AI 模型 `@cf/zai-org/glm-5.3-flash`，Gateway `mindscape-demo`。只在用户主动提交 `{text}` 时调用，不传脑电/HR/摄像头或设备凭据；失败明确返回本地规则。
+- `AiBudget` 持久化限额计数：每 IP 每分钟 6 次、全站每分钟 20 次、每天 200 次尝试。AI 模型 `@cf/zai-org/glm-5.3-flash`，Gateway `mindscape-demo`。只在用户主动提交五题答案 `{assessment}` 或心意 `{text}` 时调用，不传脑电/HR/摄像头或设备凭据；失败明确返回本地规则。
 - AI binding 自带账号身份；网关关闭内容日志和缓存，Worker 默认关闭持久日志。`/api/health` 的模型信息是配置，不证明推理成功。
 
 ```sh
@@ -23,9 +23,36 @@ npm run deploy
 
 本地 `npm run dev` 也使用会话配对。Cloudflare 本地页面可用 `npm run dev:cloudflare`；本地 R2 需要另外装入 pack。纯 API 隔离测试使用不绑定真实 AI 的 Miniflare。
 
+## 五题状态引导与三目的地推荐
+
+`POST /api/route` 新增如下请求格式，与原 `{text}` 二选一，仍须同源会话 Cookie：
+
+```json
+{
+  "assessment": {
+    "version": 1,
+    "answers": {
+      "feeling": "busy",
+      "energy": "low",
+      "attention": "scattered",
+      "wish": "rest",
+      "landscape": "forest"
+    }
+  }
+}
+```
+
+选项枚举以 `src/core/journey-assessment.mjs` 为唯一目录。服务端拒绝缺题、未知选项、额外字段和混入的 EEG / token；仅将五个问题及所选选项的中文标签发给模型，不从设备分数推断心理状态。答案不写入数据库、浏览器存储或 URL。AI Gateway 继续关闭内容日志及缓存，不作心理诊断或疗效承诺。
+
+结果新增 `kind: assessment` 与 `choices`（恰好三项，每项 `worldId`、`locationId`、`reason`）。理由严格 24–40 个 Unicode 字符，地点限已有 22 个且不可重复；完整 `recommendedWorlds` 仍保留供地球目录使用。模型错误、超时、输出不合规、预算用完均返回三项本地规则结果并带 `mode: local-rules` / `fallback`，前端明确标识。原自由文字接口保持兼容。用户点击推荐卡后直接加载对应模型并开启导览，不再进入地球二次确认；独立地球探索入口保留。
+
+演示规则：五题推荐必须包含十六湖 `scene-04`。模型提示词明确此约束，共享 `assessmentResult` 再作确定性保证：已包含则保留位置与 AI 理由，遗漏则保留前两项、将第三项替换为十六湖，并根据用户的体验意愿补上约 30 字理由。服务器和浏览器的本地回退也使用该函数，因此超时、限额或断网时仍必含十六湖，不增为四项。原自由文字推荐不受此规则影响；`DEMO_REQUIRED_WORLD` 是该演示固定地点的唯一常量。
+
+本地默认不调用 AI。`AI_GATEWAY_DEV=1` 使用 `server/ai-preview.mjs` 通过 [Cloudflare 官方 REST 接口](https://developers.cloudflare.com/ai-gateway/usage/providers/workersai/#rest-api)调用同一个模型和网关，账号 / 模型 / 网关从 `wrangler.jsonc` 读取；凭据通过 Wrangler 标准登录命令在内存获取，五分钟后按需刷新，不返回浏览器或写入日志。请求关闭缓存 / 日志、限制响应大小并使用 13 秒超时。本地额外限制每分钟 6 次、每天 50 次（内存计数，重启清零）；正式环境的 `AiBudget` 保持每日 200 次等原持久额度。仅本地 REST 传输使用 `HTTPS_PROXY`；Cloudflare Worker 使用已有 `AI` binding，无需任何新增密钥或绑定。
+
 ## 配对与 WebSocket
 
-1. 在野 → 调节共鸣 → 设备接入 → 复制设备接入配置。
+1. 在野 → 开始我的旅程 → 佩戴检查 → 复制配对配置；也可从调节共鸣 → 设备接入进入。
 2. `npm run eeg` → 本地 EEG Studio → 连接在野 → 粘贴 → 开始联动。
 3. 体验页确认读数后点击“开始脑电氛围”，按需校准。
 
@@ -138,3 +165,17 @@ V.04 已部署版本：`03d81829-624f-4099-a4d0-748a1172372c`。线上 8 项检�
 Worker 版本 `fbdab2e0-7397-4bdb-ac34-782941ed8825`。保留富士山 / 大峡谷，加入 20 个用户精选图像重建点云与 48–72 秒微光导览。新 `/scene-data/*` 路由复用 TERRAIN 绑定和 mindscape-terrain 桶，R2 对象采用内容哈希不可变命名，按清单限制路径和校验大小。旧程序化世界文件不再部署。导入、上传及地点清单见 [SCENE-CATALOG.md](SCENE-CATALOG.md)。
 
 线上验证：22 地点契约、20 个模型大小 / ETag、完整二进制校验、旧资产 404、单手模型 / WASM、EEG v2 会话隔离和心跳时效均通过。GLM-5.3-Flash 经原 AI Gateway 成功选择新雨林与极光场景。原 EEG / AI / 手势连接方式不变。验收日志在 artifacts/cloudflare-live.json，完整交接见 HANDOFF.md 第 15 节。
+
+
+## 目的地独立行程页
+
+`npm run build:cloudflare` 的前置步骤会执行 `npm run journeys:build`，从 `src/core/journeys.json` / `src/journeys.jsx` / `src/journeys.css` 生成 `public/activities/*.html`（22 个）及 `public/journeys.html`（目录）。Vite 随 public 资源将页面与照片复制到 dist，由现有 ASSETS 绑定提供；无新 Worker API、支付网关、环境变量或 R2 配置。Node 本地预览使用相同路径，独立 URL 可直接打开或刷新。
+
+行动卡通过 `journeyHref(world)` 选择对应页面，返回使用 `/?scene=<world>`；群二维码为 `src/core/community.mjs` 中的共享配置。商品名称、95 天逐日安排和价格保持用户包内数据，19 张原始照片保留署名和许可；缺照片的三处使用已标明的主题意象。发布验收应覆盖全部 22 页、目录、19 张照片与三个主题封面，不能只确认 SPA 首页 200。详情页的下单控件仅显示“在线支付暂未接入”，没有订单或收费接口。
+
+
+### 2026-10-11：佩戴引导、AI 三选一与 22 个目的地行程
+
+已发布 Worker 版本 `5a03cf2c-9aeb-4211-b644-a08e9802385c`，站点仍为 `https://mindscape-demo.aspirincap.workers.dev/`。发布前版本 `f44c5f09-4481-4325-ad67-7f042c3fab62` 可作回退依据。
+
+本次包含紧凑真实专注 / 冥想分、佩戴页静音循环视频、五题状态探索、GLM 三选一（演示必含十六湖）、推荐直达模型、实际导览 30 秒后的行动卡，以及 22 个独立行程页。原 AI Gateway、R2 与 Durable Objects 绑定不变；无真实支付接口。使用 102 项测试通过后的构建，上传 73 份新增或变化静态资源。交付与线上验证见 HANDOFF.md 第 31 节；本机证据在 `artifacts/cf-onboarding-journeys-release/`。

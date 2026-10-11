@@ -41,6 +41,7 @@ test('short-tour pause, manual takeover, reduced motion and hidden gaps do not a
   for(const [dt,active,hidden] of [[2,true,false],[.1,false,false],[.1,true,true]])tour.advance(dt,active,hidden);
   assert.equal(tour.time,.1);tour.manual();tour.advance(.1);assert.equal(tour.time,.1);
   tour.autoVisual=false;tour.resume();assert.equal(tour.autoVisual,false);tour.restart();assert.equal(tour.autoVisual,true);assert.equal(tour.time,0);
+  assert.equal(tour.snapshot().playedSeconds,.1);
 });
 
 test('particle and colour choreography is continuous and begins/ends clear', () => {

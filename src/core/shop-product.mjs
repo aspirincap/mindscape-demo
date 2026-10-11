@@ -1,4 +1,5 @@
 import { LOCATIONS } from './locations.mjs';
+import { WECHAT_GROUP } from './community.mjs';
 
 // One demonstration product. Replace this record when the real product is supplied.
 export const SHOP_PRODUCT = Object.freeze({
@@ -23,12 +24,7 @@ export const SHOP_PRODUCT = Object.freeze({
   duration: '约 3 小时',
   intensity: '轻量步行 · 新手友好',
   social: '安静同行，也可以聊聊天',
-  wechatGroup: {
-    name: '在野同行群',
-    qrImage: '/shop/forest-group.png',
-    description: '扫码进群，与真实的TA一起同游',
-    isDemo: false,
-  },
+  wechatGroup: WECHAT_GROUP,
   sessions: [
     { id: 'morning', label: '周末上午场', detail: '09:00–12:00 · 示例场次，非可预约日期' },
     { id: 'afternoon', label: '周末下午场', detail: '14:00–17:00 · 示例场次，非可预约日期' },

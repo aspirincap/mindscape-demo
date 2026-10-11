@@ -171,3 +171,9 @@ export const SCENE_ACTIONS = Object.freeze(Object.fromEntries(
 ));
 
 export const actionForScene = sceneId => Object.hasOwn(SCENE_ACTIONS, sceneId) ? SCENE_ACTIONS[sceneId] : undefined;
+
+export const ACTION_CARD_DELAY_SECONDS = 30;
+export function shouldOpenSceneAction(tour, { shown = false, available = true } = {}) {
+  return !shown && available && tour?.status === 'playing' &&
+    Number.isFinite(tour.playedSeconds) && tour.playedSeconds >= ACTION_CARD_DELAY_SECONDS;
+}

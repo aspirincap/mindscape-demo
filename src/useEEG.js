@@ -15,7 +15,7 @@ export function useEEG(options) {
     async function connect() {
       try {
         const data = await session.current; if (stopped) return;
-        update({ backend: data.backend }); clock.reset(); pending.clear();
+        update({ backend: data.backend, router: data.router }); clock.reset(); pending.clear();
         ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
         ws.onopen = () => {
           update({ connected: true, message: '会话已连接' });
