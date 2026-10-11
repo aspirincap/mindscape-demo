@@ -10,10 +10,11 @@ export class AudioEngine {
     this.mediaFactory = mediaFactory || (() => new Audio());
     this.onError = onError;
     this.enabled = false;
+    this.awaitingGesture = false;
     this.sequence = 0;
   }
 
-  async start(world) {
+  async unlock() {
     if (this.disposed) return;
     if (!this.context) {
       this.context = this.contextFactory();
@@ -21,9 +22,18 @@ export class AudioEngine {
       this.master.gain.value = 0;
       this.master.connect(this.context.destination);
     }
+    if (this.context.state !== 'running') await this.context.resume();
+  }
+
+  async start(world) {
+    if (this.disposed) return;
+    // Both calls happen synchronously in a user gesture, before either is awaited.
+    const resume = this.unlock();
+    if (!this.context) return resume;
+    this.awaitingGesture = false;
     this.setEnabled(true);
-    // Start resume and play inside the user's click, before the first await.
-    await Promise.all([this.context.resume(), this.select(trackForWorld(world))]);
+    const track = trackForWorld(world);
+    await Promise.all([resume, this.pending?.track.id === track.id ? undefined : this.select(track)]);
   }
 
   setEnabled(enabled) {
@@ -40,6 +50,8 @@ export class AudioEngine {
 
   update(state, world, enabled, volume = .5) {
     if (!this.context || this.disposed) return;
+    // Autoplay denial is a request for a gesture, not a reason to retry every frame.
+    if (enabled && this.awaitingGesture) return;
     this.setEnabled(enabled);
     const now = this.context.currentTime;
     this.master.gain.setTargetAtTime(enabled ? audioLevel(state, volume) : 0, now, enabled ? .25 : .025);
@@ -103,7 +115,10 @@ export class AudioEngine {
       const current = sequence === this.sequence && this.enabled && !this.disposed;
       if (this.pending === deck) this.pending = null;
       this.release(deck);
-      if (current) throw new Error(error.name === 'NotAllowedError' ? '浏览器暂停了声音，请再次点击开启环境音。' : `「${track.name}」播放失败，请重新开启环境音。`);
+      if (current) {
+        if (error.name === 'NotAllowedError') throw error;
+        throw new Error(`「${track.name}」播放失败，请重新开启环境音。`);
+      }
     } finally { clearTimeout(deck.timeout); }
   }
 
@@ -119,7 +134,12 @@ export class AudioEngine {
   }
 
   fail(error) {
-    if (this.disposed || !this.enabled) return;
+    if (this.disposed) return;
+    if (error.name === 'NotAllowedError') {
+      this.awaitingGesture = true;
+      this.setEnabled(false);
+      return;
+    }
     this.setEnabled(false);
     this.onError?.(error.message || '音频播放失败，请重新开启环境音。');
   }

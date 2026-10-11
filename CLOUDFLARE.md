@@ -179,3 +179,8 @@ Worker 版本 `fbdab2e0-7397-4bdb-ac34-782941ed8825`。保留富士山 / 大峡�
 已发布 Worker 版本 `5a03cf2c-9aeb-4211-b644-a08e9802385c`，站点仍为 `https://mindscape-demo.aspirincap.workers.dev/`。发布前版本 `f44c5f09-4481-4325-ad67-7f042c3fab62` 可作回退依据。
 
 本次包含紧凑真实专注 / 冥想分、佩戴页静音循环视频、五题状态探索、GLM 三选一（演示必含十六湖）、推荐直达模型、实际导览 30 秒后的行动卡，以及 22 个独立行程页。原 AI Gateway、R2 与 Durable Objects 绑定不变；无真实支付接口。使用 102 项测试通过后的构建，上传 73 份新增或变化静态资源。交付与线上验证见 HANDOFF.md 第 31 节；本机证据在 `artifacts/cf-onboarding-journeys-release/`。
+
+
+### 2026-10-11：团队介绍与默认场景音乐
+
+当前 Worker 版本 `ee95b581-4034-405f-b022-d2b14ccbd49b`，上一版 `5a03cf2c-9aeb-4211-b644-a08e9802385c` 可回退。共鸣页右上角「meet team」链接到 `/meet-team.html`；场景音乐默认开启，浏览器拦截时等待真实点击 / 按键恢复。上传 8 份资源，17 份线上文件与构建逐字节一致，深链及健康接口检查通过；107 项 Node 测试沿用已验证构建结果。无新增绑定、迁移或 AI 推理调用。详见 HANDOFF.md 第 33 节。

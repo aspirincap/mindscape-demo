@@ -657,3 +657,38 @@ TEST_HTTPS_PROXY=http://127.0.0.1:7897 node tests/geospatial-live.mjs
 Git 交付目标为现有公开仓库 `aspirincap/mindscape-demo` 的 `main`，提交包含当前源码、独立行程页与图片、佩戴视频、测试和文档；本机素材源包、历史 EEG、验证日志、dist 与凭据继续排除。README、CLOUDFLARE、JOURNEYS 和本交接记录已更新为已发布状态。5190 本地预览保留。
 
 发布记录与验证证据：`artifacts/cf-onboarding-journeys-release/` 的 `manifest.json`、`previous-deployments.json`、`deploy.log`、`live-assets.json`、`video-range-headers.txt`、`smoke.log`。Git 推送提交与结果另存该目录，不进入公开构建。
+
+## 32. 共鸣页团队入口与默认音乐（本地）
+
+2026-10-11：用户提供 `在野-Meet-the-Team.html`，要求共鸣页右上角增加「meet team」入口，音乐默认开启。
+
+- `public/meet-team.html` 原样接入附件（12,384,919 字节，SHA-256 `b8a91b34a09d49e3a65dd5ea3f30e311e176c246de8bb17d0a77aa044c792962`）。六位成员、嵌入式人物 / 背景图片、字体、GSAP 3.14.2、键盘 / 触摸切换、暂停动效和全屏功能均保留。未执行附件部署脚本；两段内联 JS 通过语法检查，无远程资源依赖，保留字体来源外链和库许可说明。
+- `src/main.jsx` 仅共鸣阶段在页面顶栏最右侧显示「meet team」，新标签页打开团队页，原场景状态保留。入口沿用墨绿 / 薄荷绿圆角按钮和现有 Phosphor 外链箭头；窄屏将「调节共鸣」收为保留 accessible name 的图标，避免新增入口挤占内容。沉浸模式仍沿用隐藏整个顶栏的现有行为。
+- 音乐偏好初始为开启，默认音量仍为 50%；推荐卡点击进入场景时同步调用音频启动，深链进入则尝试自动播放。首页、佩戴、问答、地球阶段只利用真实点击 / 按键静默解锁 AudioContext，不播放或预取歌曲。浏览器拒绝自动播放时保持偏好，等待下一次真实交互；不会每 125 ms 重试或重复报错。
+- `src/audio.js` 保留 `NotAllowedError`，区分自动播放限制与实际加载错误。同曲启动过程复用 pending 媒体；再次点击可恢复尚未运行的 AudioContext，无重复下载。原来的场景配乐映射、交叉淡化、循环 / 音量、暂停 / 隐藏 / 行动卡静音和返回恢复保留。手动关闭在本次应用会话内持续有效，切换场景不会擅自开启；刷新页面恢复默认开启。
+- README、AUDIO 和页面帮助文案同步更新。未打开传感器串口、摄像头或调用 Gateway。
+
+验证：107 项 Node 测试通过，其中音频 12 项，新增静默解锁、首次自动播放拒绝后恢复、阻止循环重试、挂起上下文去重和取消后不误恢复、实际故障重试覆盖。5190 团队页 HTTP 200 / HTML，完整响应与原附件逐字节一致，前端模块含新入口。`git diff --check` 通过。浏览器工具原有安全策略未绕过，未宣称进行真实浏览器布局 / 点击 / 听感验收。证据保存于忽略目录 `artifacts/team-default-audio/`。
+
+本地预览仍为 `http://127.0.0.1:5190/`，刷新可体验；本轮未提交、推送或发布 Cloudflare。原有未跟踪文件 `在野-开场-30s-带跳转按钮.html` 保持原样，没有合入本次修改。
+
+`npm run build:cloudflare` 成功（1 分 36 秒），仅已有可选字体和 Three 大分包提示；dist 中的团队页与附件 SHA-256 完全一致，主包包含新入口和默认播放恢复逻辑。构建日志 / 产物核对记录位于同一证据目录。
+
+
+## 33. 发布团队页与默认音乐到 Cloudflare
+
+2026-10-11：用户要求「部署到 cf」。第 32 节更新已发布到 `https://mindscape-demo.aspirincap.workers.dev/`。
+
+- 发布前通过 Wrangler 登录账号校验，复用上一轮 107 项测试全部通过的生产构建；源码没有比构建更新的修改，所有 public 文件与 dist 一致。清单 165 个文件，共 145,365,934 字节；全部单文件小于 25 MiB。原有未跟踪开场 HTML、本机 EEG / 附件、诊断记录未进入发布目录。
+- 新 Worker 版本 **`ee95b581-4034-405f-b022-d2b14ccbd49b`**，上一版本 **`5a03cf2c-9aeb-4211-b644-a08e9802385c`** 保留作回退。上传 8 份新增 / 变化资源，复用 156 份。Worker、AI Gateway / GLM-5.3-Flash、R2 和 Durable Objects 绑定保持现有配置，无新迁移。
+- 线上核验 17 份文件状态、MIME 和完整 SHA-256，均与构建一致：团队页、首页、变更后的 JS / CSS、8 段背景音乐及署名页。团队页保留全部六位成员且与附件逐字节一致；`/?scene=scene-02` 深链正常返回新版入口。`/api/health` 返回 Cloudflare Workers、22 地点和既有 Gateway / 模型配置。
+- 本轮前端发布未重复调用付费 AI 或操作真实传感器；健康接口只证明配置与服务正常，不视为推理验收。浏览器工具既有策略未绕过，自动播放限制的恢复依赖已通过的音频单元测试，未宣称真实浏览器听感 / 点击验收。
+
+本次仅部署，未提交或推送 Git；5190 本地预览保留。证据在 `artifacts/cf-team-audio-release/`，含 manifest、previous-deployments、deploy.log、live-check.json、verify.log、deployment.json。
+
+
+## 34. 最新版本与 3 分钟演讲稿提交 Git
+
+2026-10-11：用户要求「最新版推送到 git」。本次提交包含团队页、共鸣入口、默认音乐及其回归测试、Cloudflare 发布记录，以及新增的 `在野-3分钟演讲稿.md`（约 655 字正文，含分段演示提示）。目标仍为公开仓库 `aspirincap/mindscape-demo` 的 `main`。
+
+源码自第 32 节的 107 项测试与生产构建通过后未发生功能变化；团队页 SHA-256 与第 33 节线上版本一致，沿用已完成的 17 份线上资源核验。独立未接入的 `在野-开场-30s-带跳转按钮.html` 继续留在本地，不纳入本次提交；素材包、历史 EEG、凭据与验证 artifacts 继续排除。Git 提交号与远端核对结果保存于 `artifacts/git-team-audio-release/`。

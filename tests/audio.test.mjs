@@ -19,6 +19,7 @@ function harness(modes = []) {
         this.playCalls++; this.paused = false;
         if (mode === 'wait') return new Promise(resolve => { this.finish = resolve; });
         if (mode === 'fail') return Promise.reject(Object.assign(new Error('blocked'), { name: 'NotAllowedError' }));
+        if (mode === 'broken') return Promise.reject(new Error('decode failed'));
         return Promise.resolve();
       }, pause() { this.paused = true; }, removeAttribute(key) { delete this[key]; }, load() { this.unloaded = true; },
     };
@@ -63,10 +64,72 @@ test('muting during load cancels playback; disposal cannot be resurrected by a l
   assert.equal(engine.active, null); assert.equal(context.state, 'closed'); assert.equal(media[0].unloaded, true);
 });
 
-test('a blocked scene track stops audio and reports one retryable error', async t => {
-  const { engine, errors } = harness(['ready', 'fail']); t.after(() => engine.dispose());
+test('a blocked scene track waits for a gesture without repeated downloads or turning off the preference', async t => {
+  const { engine, media, errors } = harness(['ready', 'fail', 'ready']); t.after(() => engine.dispose());
   await engine.start('scene-02'); engine.update(frame, 'scene-06', true); await flush();
-  assert.equal(engine.enabled, false); assert.equal(errors.length, 1); assert.match(errors[0], /再次点击/);
+  assert.equal(engine.enabled, false); assert.equal(engine.awaitingGesture, true); assert.equal(errors.length, 0);
+  for (let i = 0; i < 20; i++) engine.update(frame, 'scene-06', true);
+  assert.equal(media.length, 2);
+  await engine.start('scene-06'); engine.update(frame, 'scene-06', true);
+  assert.equal(engine.awaitingGesture, false); assert.equal(engine.enabled, true);
+  assert.equal(engine.active.track.id, 'leaves'); assert.equal(media.length, 3);
+});
+
+test('onboarding unlocks the audio context silently without fetching any tracks', async t => {
+  const { engine, context, media } = harness(); t.after(() => engine.dispose());
+  await engine.unlock();
+  assert.equal(context.state, 'running'); assert.equal(engine.master.gain.value, 0);
+  assert.equal(media.length, 0); assert.equal(engine.enabled, false);
+  engine.update(frame, 'scene-02', false);
+  assert.equal(media.length, 0);
+  await engine.start('scene-02'); engine.update(frame, 'scene-02', true);
+  assert.equal(media.length, 1); assert.ok(engine.master.gain.value > 0);
+});
+
+test('first-load autoplay denial can recover on the next gesture', async t => {
+  const { engine, media, errors } = harness(['fail', 'ready']); t.after(() => engine.dispose());
+  await engine.start('scene-02').catch(error => engine.fail(error));
+  assert.equal(engine.awaitingGesture, true); assert.equal(errors.length, 0);
+  engine.update(frame, 'scene-02', true);
+  assert.equal(media.length, 1); assert.equal(media[0].unloaded, true);
+  await engine.start('scene-02'); engine.update(frame, 'scene-02', true);
+  assert.equal(engine.awaitingGesture, false); assert.ok(engine.master.gain.value > 0);
+});
+
+test('a later gesture resumes a pending context without downloading the same track twice', async t => {
+  const { engine, context, media } = harness(['wait']); t.after(() => engine.dispose());
+  let releaseResume, calls = 0;
+  context.resume = () => {
+    if (++calls === 1) return new Promise(resolve => { releaseResume = resolve; });
+    context.state = 'running'; releaseResume(); return Promise.resolve();
+  };
+  const automatic = engine.start('scene-02');
+  assert.equal(context.state, 'suspended'); assert.equal(media.length, 1);
+  const gesture = engine.start('scene-02');
+  assert.equal(context.state, 'running'); assert.equal(media.length, 1);
+  media[0].finish(); await Promise.all([automatic, gesture]);
+  assert.equal(engine.active.media, media[0]);
+});
+
+test('unlocking or completing an old startup cannot unmute a paused scene', async t => {
+  const { engine, context, media } = harness(['wait']); t.after(() => engine.dispose());
+  let resume;
+  context.resume = () => new Promise(resolve => { resume = resolve; });
+  const automatic = engine.start('scene-02');
+  engine.setEnabled(false);
+  context.state = 'running'; resume(); await automatic;
+  await engine.unlock(); engine.update(frame, 'scene-02', false);
+  assert.equal(engine.enabled, false); assert.equal(engine.master.gain.value, 0);
+  assert.equal(media[0].paused, true); assert.equal(media[0].unloaded, true);
+  assert.equal(engine.active, undefined);
+});
+
+test('real playback failures still report an error and allow manual recovery', async t => {
+  const { engine, errors } = harness(['broken', 'ready']); t.after(() => engine.dispose());
+  await engine.start('scene-02').catch(error => engine.fail(error));
+  assert.equal(errors.length, 1); assert.match(errors[0], /播放失败/);
+  assert.equal(engine.enabled, false); assert.equal(engine.awaitingGesture, false);
+  await engine.start('scene-02'); assert.equal(engine.enabled, true);
 });
 
 test('volume and EEG are bounded, and loop ends taper without changing playback speed', () => {
