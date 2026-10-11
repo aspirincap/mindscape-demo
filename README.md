@@ -1,6 +1,8 @@
-# Mindscape · 意境
+# 在野 · Go Wild
 
-22 个世界的交互式点云 demo：粒子地球、心意推荐、真实 ThinkGear 脑电氛围反馈、MediaPipe 单手镜头控制。当前 V.10.0 首页使用四张生成风景的渐变轮播（每张停留 8 秒、过渡 2.4 秒、缓慢推进、暂停与手动选择），富士山和大峡谷保留默认空中导览与圆角边缘渐隐；前端沿用 Riverine 提示词的全视口布局、墨蓝遮罩、青绿品牌与奶白胶囊按钮、分行入场动画和响应式移动菜单。完整提示词、设计约束和 Mindscape 适配边界见 [DESIGN.md](DESIGN.md)。
+先读 [项目简明介绍](PROJECT-OVERVIEW.md)，用日常语言了解体验流程、主要功能和使用边界。
+
+22 个世界的交互式点云 demo：粒子地球、心意推荐、真实 ThinkGear 脑电氛围反馈、MediaPipe 单手镜头控制。当前 V.10.0 首页使用四张生成风景的渐变轮播（每张停留 8 秒、过渡 2.4 秒、缓慢推进、暂停与手动选择），富士山和大峡谷保留默认空中导览与圆角边缘渐隐；前端沿用 Riverine 提示词的全视口布局、墨蓝遮罩、青绿品牌与奶白胶囊按钮、分行入场动画和响应式移动菜单。完整提示词、设计约束和 在野适配边界见 [DESIGN.md](DESIGN.md)。
 
 [线上体验](https://mindscape-demo.aspirincap.workers.dev/) · [部署与后端说明](CLOUDFLARE.md) · [地标资产与来源](LANDMARKS.md)
 
@@ -61,8 +63,8 @@ npm run dev
 ## 真实脑电接入
 
 1. 运行 `npm run eeg`，打开 <http://127.0.0.1:8765>，沿用设备当前 9600 baud / 8N1 设置。Python 是唯一串口读取者。
-2. 在本地或线上 Mindscape 的「调节共鸣 → 设备接入」复制配对配置。
-3. 在 EEG Studio「连接 Mindscape」粘贴配置并开始联动；Node 主动建立 WSS，线上页面无需访问 localhost。
+2. 在本地或线上在野的「调节共鸣 → 设备接入」复制配对配置。
+3. 在 EEG Studio「连接在野」粘贴配置并开始联动；Node 主动建立 WSS，线上页面无需访问 localhost。
 4. 等待稳定读数，选择「开始脑电氛围」，按需校准。停止联动与释放串口是独立操作。
 
 唯一网络协议为 `mindscape.eeg.v2`，不兼容旧格式。attention / meditation 的有效 1–100 分除以 100，零值与缺失为无效；poorSignal 非零或字段超过 2.5 秒未更新时冻结该控制量。HR 可缺失，显示“未接入”。界面相对分不加百分号，不把聚散称为脑电相干性。
@@ -116,4 +118,4 @@ npm run build
 
 真实录屏诊断页 `/tests/recording-replay.html` 可按 15/10/5Hz 将本机视频送入正式 Worker。私人视频、旧控制器快照与逐帧数据保存在 gitignored `artifacts/recording-test/`，不打包、不上传。`scripts/verify-gesture-recording.mjs` 仅验证保存的 V.04.1 历史指令，不重新运行当前控制器；历史结果见 [真实录屏回归](GESTURE-RECORDING-TEST.md)。当前录像未包含持续捏住后上下控制速度的动作，新交互使用真实手型加合成位移测试，不等同于真人手感验收。
 
-Cloudflare 发布使用 `npm run deploy`，内部执行 `build:cloudflare`，仅打包正式 Mindscape 入口。普通 `npm run build` 包含本地 EEG Studio。真实地形 pack 与 20 个新模型的二进制不进 Git，新 clone 需取回 R2 数据或按对应资产文档重建 / 导入。
+Cloudflare 发布使用 `npm run deploy`，内部执行 `build:cloudflare`，仅打包正式在野入口。普通 `npm run build` 包含本地 EEG Studio。真实地形 pack 与 20 个新模型的二进制不进 Git，新 clone 需取回 R2 数据或按对应资产文档重建 / 导入。

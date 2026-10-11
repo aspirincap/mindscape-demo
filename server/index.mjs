@@ -116,6 +116,6 @@ server.on('upgrade', (req, socket, head) => {
 });
 const timer = setInterval(() => { for (const [token, relay] of sessions) { relay.expire(); if (!validToken(token)) sessions.delete(token); } }, 1000);
 if (!prod) vite = await (await import('vite')).createServer({ root, server: { middlewareMode: true, hmr: { server, host: '127.0.0.1' } }, appType: 'spa' });
-server.listen(port, '127.0.0.1', () => console.log(`Mindscape ready → http://127.0.0.1:${port}`));
+server.listen(port, '127.0.0.1', () => console.log(`Go Wild ready → http://127.0.0.1:${port}`));
 function shutdown() { clearInterval(timer); for (const ws of wss.clients) ws.terminate(); wss.close(); vite?.close(); server.close(() => process.exit(0)); }
 process.on('SIGTERM', shutdown); process.on('SIGINT', shutdown);

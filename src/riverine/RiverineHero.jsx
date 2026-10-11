@@ -27,7 +27,7 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
     media.addEventListener('change', change); return () => media.removeEventListener('change', change);
   }, []);
   const action = fn => e => { e.preventDefault(); if (open) menu.current.focus(); setOpen(false); fn(); };
-  return <section className="rv-stage rv-waiting" ref={root} data-carousel-paused={!carousel.running} aria-label="Mindscape · 跟随心意，流向世界">
+  return <section className="rv-stage rv-waiting" ref={root} data-carousel-paused={!carousel.running} aria-label="在野 · Go Wild · 跟随心意，流向世界">
     <div className="rv-backdrop" aria-hidden="true">
       {HERO_SLIDES.map((slide, index) => <div key={slide.name} className={`rv-slide${carousel.current === index ? ' is-current' : carousel.previous === index ? ' is-previous' : ''}`} style={{ '--slide-focus': slide.focus }}>
         <img src={slide.src} srcSet={`${slide.small} 960w, ${slide.src} 1672w`} sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" width="1672" height="941" alt="" decoding="async" fetchPriority={index === 0 ? 'high' : 'low'} onLoad={event => carousel.loaded(event.currentTarget, index)} onError={() => carousel.failed(index)}/>
@@ -52,7 +52,7 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
       </button>
     </header>
     <div className="rv-hero">
-      <div className="rv-brand">mindscape · 意境</div>
+      <div className="rv-brand">在野 · Go Wild</div>
       <h1 className="rv-title">{['跟随呼吸，', '让心意流动，', '与世界共鸣。'].map(line => <span className="rv-title-line" key={line}><span>{line}</span></span>)}</h1>
       <p className="rv-lede"><span>从河流的脉络，走进山海的回响。</span><span>在 {LOCATIONS.length} 个世界里，找到自己的节奏。</span></p>
       <div className="rv-actions"><a className="rv-cta" href="#future" onClick={action(onStart)}>开始我的旅程 <Arrow/></a><a className="rv-discover" href="#rivers" onClick={action(onExplore)}>直接探索 {LOCATIONS.length} 个世界</a></div>

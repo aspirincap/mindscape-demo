@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 export function ForwardPanel({ bridge, command }) {
   const [config, setConfig] = useState('');
-  return <section className="connection-section forward-panel"><h2>连接 Mindscape</h2>
+  return <section className="connection-section forward-panel"><h2>连接在野</h2>
     <p className="connection-note">在体验页面选择设备接入并复制配置。仅发送专注、冥想和接触质量；原始字节与频段留在此 Mac。</p>
     <label htmlFor="mindscape-pairing">粘贴会话配置</label><textarea id="mindscape-pairing" value={config} onChange={e => setConfig(e.target.value)} rows="4" autoComplete="off" spellCheck="false" placeholder="mindscape.eeg.v2 配对 JSON"/>
     <button className="connection-button" disabled={!config.trim()} onClick={async () => { const ok = await command('forward', { action: 'start', config }); if (ok) setConfig(''); }}>开始联动</button>

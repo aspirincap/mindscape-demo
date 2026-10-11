@@ -18,7 +18,7 @@ export function EEGPanel({ connection, live, processor, enabled, onToggle, onCop
     <p className="device-hint">最近有效读数：专注 {live.lastValidAgeMs?.attention == null ? '尚无' : `${(live.lastValidAgeMs.attention / 1000).toFixed(1)} 秒前`} · 冥想 {live.lastValidAgeMs?.relaxation == null ? '尚无' : `${(live.lastValidAgeMs.relaxation / 1000).toFixed(1)} 秒前`}</p>
     <p className="device-hint">设备相对指标 1–100；无效读数显示空值。接触质量 {live.poorSignal ?? '—'}，不表示准确率。</p>
     <div className="eeg-actions"><button className="primary" onClick={onToggle} aria-pressed={enabled}>{enabled ? '停止脑电氛围' : '开始脑电氛围'}</button><button className="text-button" onClick={onCopy}>复制设备接入配置</button></div>
-    <p className="device-hint">启动本地 EEG Studio，在「连接 Mindscape」粘贴配置并开始联动。停止氛围只恢复手动设置，不释放串口。</p>
+    <p className="device-hint">启动本地 EEG Studio，在「连接在野」粘贴配置并开始联动。停止氛围只恢复手动设置，不释放串口。</p>
     <button className="text-button" disabled={cal.state === 'collecting'} onClick={onCalibrate}>{live.baseline ? '重新校准' : '校准个人基线'}</button>
     <p role="status">{cal.state === 'collecting' ? `校准 ${Math.floor(cal.elapsed)} / 30 秒 · 专注 ${cal.counts.attention} / 25 · 冥想 ${cal.counts.relaxation} / 25` : cal.state === 'failed' ? '校准失败：60 秒内有效独立样本不足，请调整接触后重试' : cal.state === 'complete' ? '个人基线已建立' : '自然睁眼静坐，至少 30 秒及每项 25 个新读数；最多等待 60 秒。'}</p>
     <div className="eeg-controls-readout">视觉响应量（非设备分数）：专注 {(live.attentionControl ?? .5).toFixed(2)} · 冥想 {(live.relaxationControl ?? .5).toFixed(2)}</div>

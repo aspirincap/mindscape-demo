@@ -1,6 +1,6 @@
 # Cloudflare 部署与 EEG v2 协议
 
-站点：https://mindscape-demo.aspirincap.workers.dev/ 。当前实现 UI 为 V.07.0；部署版本与本轮验收状态见 [HANDOFF.md](HANDOFF.md)。以下协议完整替换旧设备输入格式，不提供兼容分支。
+站点：https://mindscape-demo.aspirincap.workers.dev/ 。当前产品名为「在野 · Go Wild」，UI 为 V.10.0；部署版本与本轮验收状态见 [HANDOFF.md](HANDOFF.md)。以下协议完整替换旧设备输入格式，不提供兼容分支。
 
 ## 组成与发布
 
@@ -25,8 +25,8 @@ npm run deploy
 
 ## 配对与 WebSocket
 
-1. Mindscape → 调节共鸣 → 设备接入 → 复制设备接入配置。
-2. `npm run eeg` → 本地 EEG Studio → 连接 Mindscape → 粘贴 → 开始联动。
+1. 在野 → 调节共鸣 → 设备接入 → 复制设备接入配置。
+2. `npm run eeg` → 本地 EEG Studio → 连接在野 → 粘贴 → 开始联动。
 3. 体验页确认读数后点击“开始脑电氛围”，按需校准。
 
 配置包含 `protocol: mindscape.eeg.v2`、`http`、`websocket`、`authorization`、`expiresAt`。凭据是 24 小时会话令牌，仅保存在本地发送服务内存；不放入 URL、导出、日志或仓库。浏览器使用 HttpOnly / SameSite=Strict Cookie，线上另带 Secure。过期、发送连接被替换或协议不符时停止重试，要求用户重新配对。

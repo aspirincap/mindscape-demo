@@ -1,5 +1,5 @@
 /* The prompt owns the hero's exact geometry. These tokens carry its palette into
-   Mindscape's existing exploration and device controls without changing data. */
+   Go Wild's existing exploration and device controls without changing data. */
 :root{color:#F5FAF6;background:#03080B;--muted:#a7bab7;--silver:#c3d2cf;--accent:#88DECC;--amber:#88DECC;--surface:#091617;--line:#26413e;font-family:'RV Text','Helvetica Neue',Helvetica,Arial,sans-serif;color-scheme:dark}
 body,.app{background:#03080B}.app{max-width:1600px;padding:0 clamp(24px,4.4vw,72px)}.app.view-connect{padding:0;max-width:none}.view-connect .experience{height:100dvh;min-height:0}.view-connect main{height:100dvh}
 .app:not(.view-connect) .topbar{height:110px;gap:20px}.brand{font-family:'RV Brand','Urbanist','Helvetica Neue',Arial,sans-serif;font-weight:600;font-size:20px;letter-spacing:-.7px;color:#88DECC}.brand-divider{background:#315352}.brand-orbit{clip-path:none;width:28px;height:28px;border-radius:50%;background:#122B2A;display:grid;place-items:center}.brand-orbit::after{content:'';width:10px;height:16px;border:1.5px solid #88DECC;border-radius:80% 0 80% 0;transform:rotate(-15deg)}
