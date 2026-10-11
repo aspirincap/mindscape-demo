@@ -1,6 +1,6 @@
 # Mindscape · 意境
 
-12 个世界的交互式点云 demo：粒子地球、心意推荐、真实 ThinkGear 脑电氛围反馈、MediaPipe 单手镜头控制。当前 V.09 为富士山和大峡谷加入默认空中导览与圆角边缘渐隐；前端按用户提供的 Riverine 完整提示词重构：全视口河流视频、三层墨蓝遮罩、青绿品牌与奶白胶囊按钮、分行入场动画，以及响应式移动菜单。完整提示词、设计约束和 Mindscape 适配边界见 [DESIGN.md](DESIGN.md)。
+12 个世界的交互式点云 demo：粒子地球、心意推荐、真实 ThinkGear 脑电氛围反馈、MediaPipe 单手镜头控制。当前 V.09.1 首页使用四张生成风景的渐变轮播（每张停留 8 秒、过渡 2.4 秒、缓慢推进、暂停与手动选择），富士山和大峡谷保留默认空中导览与圆角边缘渐隐；前端沿用 Riverine 提示词的全视口布局、墨蓝遮罩、青绿品牌与奶白胶囊按钮、分行入场动画和响应式移动菜单。完整提示词、设计约束和 Mindscape 适配边界见 [DESIGN.md](DESIGN.md)。
 
 [线上体验](https://mindscape-demo.aspirincap.workers.dev/) · [部署与后端说明](CLOUDFLARE.md) · [地标资产与来源](LANDMARKS.md)
 

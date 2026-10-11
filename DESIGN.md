@@ -1,32 +1,34 @@
 # Riverine 前端设计规范
 
-更新：2026-10-11。设计依据为用户附上的完整 Riverine 提示词，优先于从 MotionSites 缩略图推测出的风格。下方原文是实现与验收的基准，不采用另行生成的背景图。
+更新：2026-10-11，V.09.1。布局依据为用户附上的完整 Riverine 提示词；用户随后明确选择四张生成图并要求渐变轮播，因此下方历史原文的远程视频限制已被最新要求替代。
 
 ## 设计约束
 
-- 背景仅使用原文指定的远程 MP4，不下载，不替换为本地图片或视频；静音、自动循环、内联播放，object-fit: cover。
-- Hero 高度严格为 100dvh，裁切铺满；基础色 #03080B，三层遮罩依原文透明度与停靠位置。
+- 背景使用四张用户选定的生成图：云海富士 → 流光地貌 → 深蓝海境 → 峡谷晨光。1672 / 960 宽度 WebP，Vite 打包后带哈希；object-fit: cover，手机按每张图的主体位置裁切。
+- 每张完整停留 8 秒，2.4 秒交叉淡入；旧图保留为全不透明底层，直到新图完全显示，避免闪黑。图片解码完成后才参与切换，加载失败自动跳过。
+- 画面缓慢推进最多 5.5%，页面隐藏、用户暂停或背景选择获得焦点时暂停。减少动态效果默认关闭自动播放与缩放。手动选图后保持该图，可用右上角播放按钮恢复轮播。
+- Hero 高度严格为 100dvh，裁切铺满；基础色 #03080B，保留三层遮罩结构，降低桌面遮罩强度以适配生成图自身的左下暗色留白。
 - 1280 × 960 基准，以 --u 统一缩放；保留手机、短横屏、平板和竖屏的独立响应规则与安全区。
 - 字体名、字重、font-display: block 与回退栈原样保留。缺少指定字体文件时使用原文回退栈，不冒用其他字体。
-- 顶部树形标识和飞蛾 SVG、右侧胶囊导航、声音按钮、左下标题/说明/操作、右下滚动提示构成固定层次。
+- 顶部树形标识和飞蛾 SVG、右侧胶囊导航、轮播暂停按钮、左下标题/说明/操作、右下滚动提示构成固定层次；新增轻量背景名称和四个选图点。
 - 手机菜单支持按钮切换、Escape 关闭并返焦、外部点击关闭、选项选择关闭和打开时首项聚焦。
-- 字体与视频就绪后仅执行一次 Web Animations API 入场；3.5 秒兜底；减少动态效果时直接显示完成状态。
-- 不把提示词里的声音按钮视为音频资源授权：该按钮只切换可访问状态，原文没有音频文件。
+- 字体与首张图片就绪后仅执行一次 Web Animations API 入场；3.5 秒兜底；减少动态效果时直接显示完成状态。
+- 原占位声音按钮替换为实际轮播播放/暂停控制；场景中的音频功能独立保留。
 
 ## Mindscape 实施范围
 
 用户已确认以重构 Mindscape 为准，保留现有功能与产品文案。本次针对现有应用前端，保留 React、EEG v2、单手控制、真实地形、AI 推荐与原有入口。原稿里的 Riverine 品牌和英文文案替换为 Mindscape 现有产品内容；链接保留原 href，并连接到实际旅程、地球、说明和设备面板。原稿要求的“独立 HTML”是其原始交付形式，本项目采用 React 组件以延续现有功能。
 
-- `src/riverine/RiverineHero.jsx`：首页组合、指定 SVG、可访问移动菜单、声音状态按钮。
+- `src/riverine/RiverineHero.jsx`：首页组合、指定 SVG、可访问移动菜单、轮播控制。
 - `src/riverine/hero.css`：原文标尺、渐变、字体、比例与响应断点。
-- `src/riverine/design.mjs`：视频地址、SVG 路径、完整 WAAPI 入场及清理。3.5 秒超时直接显示并禁止延迟重播。
+- `src/riverine/design.mjs`：SVG 路径、完整 WAAPI 入场及清理。3.5 秒超时直接显示并禁止延迟重播。
 - `src/riverine/theme.css`：将墨蓝/青绿/奶白应用至地球、目的地、脑电、视觉、手势和地图 UI，点云数据与 EEG 算法保持原实现。
-- 首页不预载 WebGL 地球或点云；点击开始/探索后启动原旅程。离开首页卸载背景视频。
+- `src/riverine/slideshow.jsx`：四张图片与响应式资源、加载状态、8 秒停留、2.4 秒切换、暂停 / 焦点 / 页面可见性与减少动态效果。
+- 首页不预载 WebGL 地球或点云；点击开始/探索后启动原旅程。离开首页清理轮播定时器与事件。
 - 三份指定 woff2 未随附件提供，因此保留原 @font-face 与回退栈；不替换为其他网络字体。浏览器可能记录这三份可选文件的 404。
-- 声音状态按钮按原提示词仅切换 aria-pressed 与波纹透明度，不引入音频文件；场景中的既有 Web Audio 音量控制独立保留。
 - 常规视图定位采用 1280×960 下 logo 左 36/上 28、hero 左 56/下 68、cue 右 72/下 79（原文未给这些具体坐标，按其指定方位落地）。三个标题行按 Mindscape 中文内容调整，字体及比例规则沿用。
 
-## 原始提示词（完整保留）
+## 原始提示词（历史原文，完整保留；背景以以上最新约束为准）
 
 ```text
 Build one standalone HTML file, index.html, that is a full-viewport hero section and nothing else. Output the file exactly as specified below. Do not redesign, rename, restyle, or omit any element, rule, or script. One page, no framework, no external CSS or JS. The background must be this remote video URL only — do not download it and do not use a local image or video:

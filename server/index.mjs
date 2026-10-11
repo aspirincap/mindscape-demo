@@ -18,7 +18,7 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const port = Number(process.env.PORT || 5173);
 const prod = process.env.NODE_ENV === 'production';
 let vite = null;
-const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.geojson': 'application/geo+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.bin': 'application/octet-stream', '.ply': 'application/octet-stream', '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.task': 'application/octet-stream' };
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.geojson': 'application/geo+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.bin': 'application/octet-stream', '.ply': 'application/octet-stream', '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.task': 'application/octet-stream' };
 const sessions = new Map();
 function tokenFor(req) {
   const token = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1] || req.headers.cookie?.split(';').map(x => x.trim()).find(x => x.startsWith(COOKIE + '='))?.slice(COOKIE.length + 1);

@@ -1,4 +1,3 @@
-export const RIVER_VIDEO = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4';
 export const TREE_PATHS = [
   'M24.2 37V24',
   'M19.8 39.3c1.2-1.9 2.8-2.7 4.4-2.7s3.2.8 4.4 2.7',
@@ -12,15 +11,15 @@ export const MOTH_PATH = 'M19.5 12.4C17.5 9.5 14 5 10.8 3 9.6 2.4 8 2.2 6 2.3 4.
 
 // One entrance per mounted hero. Data readiness is bounded; missing media/fonts
 // must never leave navigation hidden. Animations never write inline styles.
-export function enterRiverine(root, video) {
+export function enterRiverine(root) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const animations = [];
   let disposed = false, started = false, frame;
   const show = () => root.classList.remove('rv-waiting');
   const cancel = () => { show(); animations.forEach(a => a.cancel()); };
-  const motionChange = () => { if (reduced.matches) { cancel(); video.pause(); } };
+  const motionChange = () => { if (reduced.matches) cancel(); };
   reduced.addEventListener('change', motionChange);
-  if (reduced.matches) { show(); video.pause(); }
+  if (reduced.matches) show();
   else root.classList.add('rv-waiting');
   const timer = setTimeout(() => { started = true; show(); }, 3500);
   const animate = (selector, keyframes, delay, duration, easing) => {
@@ -41,13 +40,14 @@ export function enterRiverine(root, video) {
     animate('.rv-moth', [{ opacity: 0, transform: 'scale(.92)' }, { opacity: 1, transform: 'scale(1)' }], 420, 650, expo);
     animate('.rv-nav, .rv-menu', lift(8), 120, 700, expo);
     root.querySelectorAll('.rv-nav > a').forEach((el, i) => animations.push(el.animate(lift(4), { delay: 260 + i * 45, duration: 700, easing: expo, fill: 'backwards' })));
-    animate('.rv-sound', lift(8), 200, 700, expo);
+    animate('.rv-playback', lift(8), 200, 700, expo);
     animate('.rv-brand', lift(10), 300, 650, expo);
     root.querySelectorAll('.rv-title-line > span').forEach((el, i) => animations.push(el.animate([{ transform: 'translateY(115%)' }, { transform: 'translateY(0)' }], { delay: 380 + i * 90, duration: 1050, easing: expo, fill: 'backwards' })));
     root.querySelectorAll('.rv-lede > span').forEach((el, i) => animations.push(el.animate(lift(14), { delay: 800 + i * 60, duration: 800, easing: expo, fill: 'backwards' })));
     animate('.rv-cta', lift(12), 1000, 800, expo);
     animate('.rv-discover', lift(8), 1100, 600, quart);
     animate('.rv-cue', lift(-6), 1250, 700, expo);
+    animate('.rv-carousel-controls', lift(6), 1250, 700, expo);
     show();
     Promise.allSettled(animations.map(a => a.finished)).then(() => {
       if (disposed) return;
@@ -57,7 +57,12 @@ export function enterRiverine(root, video) {
     });
   };
   let release;
-  const readyVideo = new Promise(resolve => { release = resolve; if (video.readyState >= 2) resolve(); else video.addEventListener('loadeddata', resolve, { once: true }); });
-  Promise.all([document.fonts.ready, readyVideo]).then(start);
-  return () => { disposed = true; clearTimeout(timer); cancelAnimationFrame(frame); video.removeEventListener('loadeddata', release); reduced.removeEventListener('change', motionChange); cancel(); };
+  const firstImage = root.querySelector('.rv-slide.is-current img');
+  const readyImage = new Promise(resolve => {
+    release = resolve;
+    if (!firstImage || firstImage.complete) resolve();
+    else { firstImage.addEventListener('load', resolve, { once: true }); firstImage.addEventListener('error', resolve, { once: true }); }
+  });
+  Promise.all([document.fonts.ready, readyImage]).then(start);
+  return () => { disposed = true; clearTimeout(timer); cancelAnimationFrame(frame); firstImage?.removeEventListener('load', release); firstImage?.removeEventListener('error', release); reduced.removeEventListener('change', motionChange); cancel(); };
 }

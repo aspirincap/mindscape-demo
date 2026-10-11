@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { RIVER_VIDEO, TREE_PATHS, MOTH_PATH, enterRiverine } from './design.mjs';
+import { TREE_PATHS, MOTH_PATH, enterRiverine } from './design.mjs';
+import { HERO_SLIDES, useHeroSlideshow } from './slideshow';
 import './hero.css';
 
 export function RiverineMark({ label = 'Mindscape 意境首页', onClick }) {
@@ -12,9 +13,10 @@ const Down = () => <svg className="rv-chevron" viewBox="0 0 11 6" aria-hidden="t
 const Arrow = ({ partner = false }) => <span className="rv-arrow-disc"><svg viewBox={partner ? '0 0 5 8' : '0 0 6 9'} aria-hidden="true"><path d={partner ? 'M.5.5 3.5 3.5.5 6.5' : 'M.6.6 4 4 .6 7.4'}/></svg></span>;
 
 export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
-  const root = useRef(), video = useRef(), header = useRef(), menu = useRef(), nav = useRef();
-  const [open, setOpen] = useState(false), [ambient, setAmbient] = useState(true);
-  useEffect(() => enterRiverine(root.current, video.current), []);
+  const root = useRef(), header = useRef(), menu = useRef(), nav = useRef();
+  const [open, setOpen] = useState(false);
+  const carousel = useHeroSlideshow();
+  useEffect(() => enterRiverine(root.current), []);
   useEffect(() => {
     if (!open) return;
     nav.current.querySelector('a')?.focus();
@@ -29,8 +31,12 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
     media.addEventListener('change', change); return () => media.removeEventListener('change', change);
   }, []);
   const action = fn => e => { e.preventDefault(); if (open) menu.current.focus(); setOpen(false); fn(); };
-  return <section className="rv-stage rv-waiting" ref={root} aria-label="Mindscape · 跟随心意，流向世界">
-    <video ref={video} className="rv-video" src={RIVER_VIDEO} autoPlay muted loop playsInline aria-hidden="true"/>
+  return <section className="rv-stage rv-waiting" ref={root} data-carousel-paused={!carousel.running} aria-label="Mindscape · 跟随心意，流向世界">
+    <div className="rv-backdrop" aria-hidden="true">
+      {HERO_SLIDES.map((slide, index) => <div key={slide.name} className={`rv-slide${carousel.current === index ? ' is-current' : carousel.previous === index ? ' is-previous' : ''}`} style={{ '--slide-focus': slide.focus }}>
+        <img src={slide.src} srcSet={`${slide.small} 960w, ${slide.src} 1672w`} sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" width="1672" height="941" alt="" decoding="async" fetchPriority={index === 0 ? 'high' : 'low'} onLoad={event => carousel.loaded(event.currentTarget, index)} onError={() => carousel.failed(index)}/>
+      </div>)}
+    </div>
     <div className="rv-shade rv-shade-x"/><div className="rv-shade rv-shade-y"/><div className="rv-shade rv-shade-corner"/>
     <header className="rv-header" ref={header}>
       <RiverineMark onClick={e => e.preventDefault()}/>
@@ -45,8 +51,8 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
         <a href="#news" onClick={action(onHelp)}>指南</a>
         <a className="rv-partner" href="#partner" aria-label="调节共鸣" onClick={action(onControls)}>连接共鸣 <Arrow partner/></a>
       </nav>
-      <button className="rv-sound" aria-label="Ambient river sound" aria-pressed={ambient} title="氛围状态开关 · 背景视频保持静音" onClick={() => setAmbient(v => !v)}>
-        <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14.6 19.6h3.6l5.9-4.9v18.6l-5.9-4.9h-3.6z"/><path className="rv-wave" d="M27.6 19.6c1.9 2.8 1.9 6 0 8.8"/><path className="rv-wave" d="M31.2 16.2c3.4 4.9 3.4 10.7 0 15.6"/></svg>
+      <button className="rv-playback" aria-label={carousel.paused ? '播放背景轮播' : '暂停背景轮播'} title={carousel.paused ? '播放背景轮播' : '暂停背景轮播'} onClick={() => carousel.setPaused(value => !value)}>
+        <svg viewBox="0 0 48 48" aria-hidden="true">{carousel.paused ? <path d="m20 16 12 8-12 8z"/> : <><path d="M20 16v16"/><path d="M28 16v16"/></>}</svg>
       </button>
     </header>
     <div className="rv-hero">
@@ -54,6 +60,10 @@ export function RiverineHero({ onStart, onExplore, onControls, onHelp }) {
       <h1 className="rv-title">{['跟随呼吸，', '让心意流动，', '与世界共鸣。'].map(line => <span className="rv-title-line" key={line}><span>{line}</span></span>)}</h1>
       <p className="rv-lede"><span>从河流的脉络，走进山海的回响。</span><span>在十二个世界里，找到自己的节奏。</span></p>
       <div className="rv-actions"><a className="rv-cta" href="#future" onClick={action(onStart)}>开始我的旅程 <Arrow/></a><a className="rv-discover" href="#rivers" onClick={action(onExplore)}>直接探索 12 个世界</a></div>
+    </div>
+    <div className="rv-carousel-controls" role="group" aria-label="首页背景选择" onFocusCapture={() => carousel.setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) carousel.setFocused(false); }}>
+      <span className="rv-slide-name">{HERO_SLIDES[carousel.current].name}</span>
+      <div className="rv-slide-dots">{HERO_SLIDES.map((slide, index) => <button key={slide.name} aria-label={`查看背景：${slide.name}`} aria-pressed={carousel.current === index} disabled={!carousel.ready.includes(index) || carousel.transitioning} onClick={() => carousel.select(index, true)}><span/></button>)}</div>
     </div>
     <a className="rv-cue" href="#details" onClick={action(onExplore)}>探索更多 <Down/></a>
   </section>;

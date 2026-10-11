@@ -1,6 +1,6 @@
 # Mindscape 交接记录
 
-更新：2026-10-11（Asia/Shanghai）。当前 V.09.0 为两处真实地形加入默认空中导览、清晰入场、平滑光影与边缘渐隐，见第 13 节。V.08 Riverine 前端重构见第 12 节。第 9 / 11 节分别保留 V.06.1 / V.07.0 的历史验证。
+更新：2026-10-11（Asia/Shanghai）。当前 V.09.1 首页使用用户选定的四张生成图做渐变轮播，见第 14 节。V.09.0 两处真实地形的空中导览、清晰入场、平滑光影与边缘渐隐见第 13 节。V.08 Riverine 前端重构见第 12 节。第 9 / 11 节分别保留 V.06.1 / V.07.0 的历史验证。
 
 ## 1. 接手先看
 
@@ -9,11 +9,11 @@
 | 本地目录 | `/Users/mvgz0331/Documents/ChatGPT/td-dive` |
 | 线上 Demo | https://mindscape-demo.aspirincap.workers.dev/ |
 | 公开仓库 | https://github.com/aspirincap/mindscape-demo |
-| UI 版本 | `V.09.0`；`package.json` 仍为 `1.0.0` |
-| 最近成功部署的 Worker 版本 | `adb1ef45-6789-464c-acce-554327ec0443` |
-| 本轮代码提交 | 使用 `git log -1 -- src/core/geo-tour.mjs` 查看，避免文档自引用提交哈希 |
-| 本轮范围 | 两处真实地形空中导览、光影平滑与边缘渐隐；真实 BIN 本地验证 |
-| 提交状态 | 本轮源码、设计规范与交接记录一起提交至 `main`；V.09 验证与发布见第 13 节。EEG v2 历史代码提交为 `1c8e2e2`。 |
+| UI 版本 | `V.09.1`；`package.json` 仍为 `1.0.0` |
+| 最近成功部署的 Worker 版本 | `ba6f9dfb-a3b2-4f28-8c3b-d7bcd8eadce5` |
+| 本轮代码提交 | 使用 `git log -1 -- src/riverine/slideshow.jsx` 查看，避免文档自引用提交哈希 |
+| 本轮范围 | 首页四张生成图渐变轮播、响应式资源与播放控制 |
+| 提交状态 | 本轮源码、设计规范与交接记录一起提交至 `main`；V.09.1 验证与发布见第 14 节。EEG v2 历史代码提交为 `1c8e2e2`。 |
 
 当前有 12 个世界：富士山、大峡谷使用真实地理数据，其余 10 个继续使用原有程序化主题点云。两处真实场景已加入连续粒子流动、柔和光晕、稀疏亮点余辉，并接入共用的视觉调节面板。
 
@@ -368,4 +368,20 @@ TEST_HTTPS_PROXY=http://127.0.0.1:7897 node tests/geospatial-live.mjs
 
 已部署 Worker `adb1ef45-6789-464c-acce-554327ec0443`，地址仍为 https://mindscape-demo.aspirincap.workers.dev/ 。线上复核富士山自动进入 5 分钟导览、大峡谷进入 4 分钟导览，清晰画面与暂停按钮正常，页脚 V.09.0；两处切换后未发现线上控制台错误。截图在 `artifacts/tour/online-fuji.jpg`、`online-canyon.jpg`。源数据、后端、Gateway 和 EEG 协议没有更改。
 
-本轮代码与文档一起提交并推送 `origin/main`，精确提交用 `git log -1 -- src/core/geo-tour.mjs` 查看。5186 本轮预览收尾后关闭，未改动原 5174 / 8765 进程。私人 BIN、个人统计与 `artifacts/` 不进入 Git 或部署资产。
+本轮代码与文档一起提交并推送 `origin/main`，精确提交用 `git log -1 -- src/riverine/slideshow.jsx` 查看。5186 本轮预览收尾后关闭，未改动原 5174 / 8765 进程。私人 BIN、个人统计与 `artifacts/` 不进入 Git 或部署资产。
+
+
+## 14. 四张生成图首页轮播（V.09.1）
+
+用户先要求生成候选 Hero 图片，随后选择“四张都要，渐变轮播”。此指令取代历史 Riverine 提示词里“只能使用指定 MP4”的限制；其余布局和应用功能保留。
+
+- 顺序：云海富士 → 流光地貌 → 深蓝海境 → 峡谷晨光 → 云海富士。完整停留 8 秒、渐变 2.4 秒；旧图保持不透明底层，新图在上方逐渐显现，避免双层同时减透明导致闪黑。
+- 图片只在 decode 成功后进入轮播；加载失败跳过，首张失败时使用已就绪背景。四张原始生成 PNG 和完整提示词留在 gitignored `artifacts/hero-options/`；正式 WebP 在 `src/assets/hero/`，1672 / 960 两档、质量 84、内容哈希构建。完整四图约 414 KiB，小图约 154 KiB。
+- 轻微缓慢推进，最大缩放 1.055；离开标签页暂停计时和缩放，返回后重新完整停留。减少动态效果默认暂停，手动选图无动画；改变系统偏好为减少动态效果时自动暂停。
+- 右上角原占位声音图标改成实际轮播播放/暂停。右下名称与四个选图点支持手动选择，选择后保持该图，点击播放恢复。选择控件获得键盘焦点时暂停自动换图。
+- 手机使用每张图独立的主体裁切位置，背景控制位于左下，探索入口仍在右下。保留全部导航与开始 / 直接探索入口；首页不加载点云。
+- 代码入口：`src/riverine/slideshow.jsx` 管理图片、解码、轮播与清理，`RiverineHero.jsx` 渲染叠层和控件，`hero.css` 定义过渡、缩放与裁切，`design.mjs` 改为首图 / 字体就绪入场。
+
+验证：`npm test` 61 / 61 通过，`npm run build:cloudflare` 通过；内置浏览器实际检查 1280×720 桌面与 390×844 手机、四图加载、暂停/恢复、手动选图、自动轮播和峡谷回到富士的渐变叠层，无横向溢出。浏览器控制台未见本次新增错误。减少动态效果通过实现检查，未切换用户系统偏好做实际验证。本次没有重跑旧 EEG / 地形全套浏览器回归。
+
+发布：已部署 Worker `ba6f9dfb-a3b2-4f28-8c3b-d7bcd8eadce5`。线上四张哈希 WebP 全部解码成功，无旧 MP4 请求、无横向溢出，暂停和选图可用，未见控制台错误。线上截图 `artifacts/hero-carousel/online-desktop.png`，手机截图 `artifacts/hero-carousel/mobile-ocean.png`。本轮源代码、压缩背景与文档一起提交并推送 `origin/main`；原始 PNG 不参与部署。
